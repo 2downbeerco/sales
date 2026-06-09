@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="2 Down Sales">
+<title>2 Down Beer Co. — Sales</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #F5F3EF;
+  --surface: #FFFFFF;
+  --surface2: #F9F8F6;
+  --border: #E6E2DB;
+  --hover: #EEEBE5;
+  --text: #18160F;
+  --muted: #857F75;
+  --orange: #C8721A;
+  --orange-light: #F5E8D6;
+  --green: #16A34A;
+  --red: #DC2626;
+  --blue: #2563EB;
+  --purple: #7C3AED;
+  --sans: 'Plus Jakarta Sans', sans-serif;
+  --radius: 10px;
+  --radius-sm: 6px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--sans); background: var(--bg); color: var(--text); font-size: 14px; min-height: 100vh; -webkit-font-smoothing: antialiased; }
+
+/* ── Login ── */
+#login-screen {
+  display: flex; align-items: center; justify-content: center;
+  height: 100vh; background: var(--bg);
+}
+.login-card {
+  background: var(--surface); border-radius: 16px; padding: 40px 36px;
+  width: 340px; text-align: center;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.07), 0 0 0 1px var(--border);
+}
+.login-logo { font-size: 20px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 4px; }
+.login-logo span { color: var(--orange); }
+.login-sub { font-size: 12px; color: var(--muted); margin-bottom: 28px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; }
+
+/* ── App shell ── */
+#app { display: none; flex-direction: column; min-height: 100vh; }
+
+.topbar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 20px;
+  display: flex; align-items: center;
+  height: 50px; gap: 0; position: sticky; top: 0; z-index: 100;
+}
+.topbar-brand { font-weight: 800; font-size: 14px; letter-spacing: -0.3px; margin-right: 28px; white-space: nowrap; }
+.topbar-brand span { color: var(--orange); }
+.tab-btn {
+  padding: 0 14px; height: 50px; border: none; background: none; cursor: pointer;
+  font-size: 13px; font-weight: 600; color: var(--muted);
+  border-bottom: 2px solid transparent; font-family: var(--sans);
+  transition: color 0.12s; white-space: nowrap;
+}
+.tab-btn.active { color: var(--orange); border-bottom-color: var(--orange); }
+.tab-btn:hover:not(.active) { color: var(--text); }
+.topbar-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.back-link {
+  font-size: 12px; font-weight: 600; color: var(--muted); text-decoration: none;
+  padding: 5px 10px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+  transition: all 0.12s; font-family: var(--sans);
+}
+.back-link:hover { color: var(--text); border-color: var(--text); }
+
+.main { padding: 20px; max-width: 1200px; margin: 0 auto; width: 100%; }
+
+/* ── Stat cards ── */
+.stat-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 16px; }
+.stat-card {
+  background: var(--surface); border-radius: var(--radius);
+  border: 1px solid var(--border); padding: 16px 18px;
+}
+.stat-num { font-size: 26px; font-weight: 800; letter-spacing: -1px; line-height: 1; }
+.stat-lbl { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.9px; margin-top: 5px; font-weight: 700; }
+
+/* ── Cards ── */
+.card { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); padding: 18px; }
+.card-title { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.9px; font-weight: 700; margin-bottom: 14px; }
+
+/* ── Grid layouts ── */
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+.grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+
+/* ── Tables ── */
+.tbl-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+th {
+  text-align: left; padding: 8px 12px;
+  border-bottom: 1.5px solid var(--border);
+  color: var(--muted); font-size: 10px; text-transform: uppercase;
+  letter-spacing: 0.9px; font-weight: 700; white-space: nowrap;
+  background: var(--surface2);
+}
+td { padding: 9px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; font-size: 13px; }
+tr:last-child td { border-bottom: none; }
+tbody tr:hover td { background: var(--surface2); }
+
+/* ── Form elements ── */
+.inp {
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  padding: 8px 11px; font-family: var(--sans); font-size: 13px;
+  background: var(--surface); color: var(--text); outline: none;
+  transition: border-color 0.12s;
+}
+.inp:focus { border-color: var(--orange); }
+.lbl { display: block; font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.7px; margin-bottom: 5px; }
+
+/* ── Buttons ── */
+.btn {
+  border: none; border-radius: var(--radius-sm); padding: 8px 14px;
+  font-family: var(--sans); font-size: 13px; font-weight: 600; cursor: pointer;
+  transition: all 0.12s; line-height: 1;
+}
+.btn-primary { background: var(--orange); color: #fff; }
+.btn-primary:hover { background: #B5641A; }
+.btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--text); }
+.btn-ghost:hover { background: var(--hover); }
+.btn-danger { background: #fee2e2; color: var(--red); border: 1px solid #fecaca; }
+.btn-sm { padding: 5px 10px; font-size: 12px; }
+
+/* ── Period nav ── */
+.period-nav { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.period-label { font-weight: 700; font-size: 15px; min-width: 160px; text-align: center; }
+
+/* ── Badge ── */
+.badge { display: inline-block; padding: 2px 7px; border-radius: 4px; font-size: 11px; font-weight: 700; letter-spacing: 0.2px; }
+
+/* ── Chart containers ── */
+.chart-wrap { position: relative; height: 240px; }
+
+/* ── Modal ── */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.35);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 1000; padding: 20px;
+}
+.modal-box {
+  background: var(--surface); border-radius: 14px; padding: 24px;
+  width: 100%; max-width: 480px; max-height: 90vh; overflow-y: auto;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.15);
+}
+
+/* ── Empty states ── */
+.empty { text-align: center; padding: 28px; color: var(--muted); font-size: 13px; }
+
+/* ── Revenue split tiles ── */
+.rev-tile {
+  padding: 14px 16px; background: var(--surface2);
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+}
+.rev-tile-title { font-size: 11px; color: var(--muted); font-weight: 600; margin-bottom: 8px; }
+.rev-tile-row { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.rev-tile-row span { font-size: 12px; color: var(--muted); }
+.rev-tile-row b { font-size: 13px; font-weight: 700; color: var(--text); }
+.rev-tile-total { font-size: 15px; font-weight: 800; color: var(--orange); margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); }
+
+/* ── Responsive ── */
+@media (max-width: 640px) {
+  .stat-row { grid-template-columns: 1fr 1fr; }
+  .grid2, .grid3 { grid-template-columns: 1fr; }
+  .main { padding: 12px; }
+  .topbar { padding: 0 12px; }
+  .tab-btn { padding: 0 10px; font-size: 12px; }
+}
+</style>
+</head>
+<body>
+
+<!-- Login -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo"><span>2 Down</span> Beer Co.</div>
+    <div class="login-sub">Sales Dashboard</div>
+    <input type="password" id="login-pw" class="inp" style="width:100%;margin-bottom:12px;text-align:center" placeholder="Password…"
+      onkeydown="if(event.key==='Enter')checkPw()">
+    <button class="btn btn-primary" style="width:100%;padding:10px" onclick="checkPw()">Enter</button>
+  </div>
+</div>
+
+<!-- App -->
+<div id="app">
+  <div class="topbar">
+    <div class="topbar-brand"><span>2 Down</span> Beer Co.</div>
+    <button class="tab-btn active" onclick="switchTab('b2b',this)">B2B Revenue</button>
+    <button class="tab-btn" onclick="switchTab('growlers',this)">Growler Sales</button>
+    <button class="tab-btn" onclick="switchTab('consolidated',this)">Consolidated</button>
+    <div class="topbar-right">
+      <a href="../orders/" class="back-link">← Ops</a>
+    </div>
+  </div>
+  <div class="main" id="content"></div>
+</div>
+
+<div id="modal-root"></div>
+
+<script>
+// ── Config ───────────────────────────────────────────────────────────────────
+const SB_URL = 'https://wznilnuaatmlqgfankno.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind6bmlsbnVhYXRtbHFnZmFua25vIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4NjMzODUsImV4cCI6MjA5MjQzOTM4NX0.CP15u0zCIM6o27hvMvWAuSYFdzdFBefccNPPvFXwIwQ';
+const SB_HDR = {
+  'apikey': SB_KEY,
+  'Authorization': 'Bearer ' + SB_KEY,
+  'Content-Type': 'application/json',
+  'Prefer': 'return=representation'
+};
+const MRP_PER_LITRE = 134.4;
+
+const BEERS = [
+  { code: 'BB', name: 'Basil Blonde',  color: '#D4A017' },
+  { code: 'GR', name: 'Gold Rush',     color: '#7BB353' },
+  { code: 'MP', name: 'Missing Piece', color: '#E07B3A' },
+  { code: 'DC', name: 'Daddy Cool',    color: '#9B7B6A' },
+  { code: 'OW', name: 'Other Weiss',   color: '#4A9BD4' },
+];
+
+// ── State ────────────────────────────────────────────────────────────────────
+let orders = [];
+let bars = [];
+let invData = {};
+let growlerSales = [];
+let currentTab = 'b2b';
+let b2bOff = 0, growOff = 0, consOff = 0;
+
+// ── Auth ─────────────────────────────────────────────────────────────────────
+function checkPw() {
+  const v = document.getElementById('login-pw').value;
+  if (v === '2D1002!') {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'flex';
+    loadData();
+  } else {
+    const el = document.getElementById('login-pw');
+    el.value = '';
+    el.placeholder = 'Wrong password';
+    setTimeout(() => { el.placeholder = 'Password…'; }, 1500);
+  }
+}
+
+function switchTab(tab, el) {
+  currentTab = tab;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  render();
+}
+
+// ── Supabase helpers ──────────────────────────────────────────────────────────
+async function sbGet(table) {
+  try {
+    const res = await fetch(SB_URL + '/rest/v1/' + table + '?select=id,data', { headers: SB_HDR });
+    if (!res.ok) return [];
+    const rows = await res.json();
+    return rows.map(r => Object.assign({}, r.data, { id: r.id })).filter(Boolean);
+  } catch (_) { return []; }
+}
+
+async function sbUpsert(table, id, data) {
+  try {
+    await fetch(SB_URL + '/rest/v1/' + table, {
+      method: 'POST',
+      headers: Object.assign({}, SB_HDR, { 'Prefer': 'resolution=merge-duplicates,return=representation' }),
+      body: JSON.stringify({ id: id, data: data })
+    });
+  } catch (_) {}
+}
+
+// ── Data loading ──────────────────────────────────────────────────────────────
+async function loadData() {
+  document.getElementById('content').innerHTML = '<div class="empty">Loading…</div>';
+  try {
+    try { const o = localStorage.getItem('2down_orders_v4'); if (o) orders = JSON.parse(o); } catch(_) {}
+    try { const b = localStorage.getItem('2down_bars_v4');   if (b) bars = JSON.parse(b); }   catch(_) {}
+    try { const i = localStorage.getItem('2down_inv_data');  if (i) invData = JSON.parse(i); } catch(_) {}
+    try { const g = localStorage.getItem('2down_growler_sales'); if (g) growlerSales = JSON.parse(g); } catch(_) {}
+
+    const [remOrders, remBars, remKegs] = await Promise.all([
+      sbGet('orders'), sbGet('bars'), sbGet('kegs')
+    ]);
+
+    if (remOrders.length) {
+      orders = remOrders.filter(o => o && o.id && o.barId && o.deliveryDate && Array.isArray(o.items));
+      localStorage.setItem('2down_orders_v4', JSON.stringify(orders));
+    }
+    if (remBars.length) {
+      bars = remBars;
+      localStorage.setItem('2down_bars_v4', JSON.stringify(bars));
+    }
+    const invRow = remKegs.find(k => k && k.invData);
+    if (invRow) { invData = invRow.invData; localStorage.setItem('2down_inv_data', JSON.stringify(invData)); }
+    const growRow = remKegs.find(k => k && k.growlerSales);
+    if (growRow) { growlerSales = growRow.growlerSales; localStorage.setItem('2down_growler_sales', JSON.stringify(growlerSales)); }
+
+    render();
+  } catch (e) {
+    document.getElementById('content').innerHTML = '<div class="empty">Error: ' + e.message + '</div>';
+  }
+}
+
+async function saveGrowlers() {
+  localStorage.setItem('2down_growler_sales', JSON.stringify(growlerSales));
+  await sbUpsert('kegs', '__growler_sales__', { growlerSales: growlerSales });
+}
+
+// ── Utilities ─────────────────────────────────────────────────────────────────
+function uid() { return Math.random().toString(36).slice(2, 14); }
+
+function fmtDate(d) {
+  if (!d) return '—';
+  const dt = new Date(d + (d.length === 10 ? 'T00:00:00' : ''));
+  return dt.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+function fmtINR(n) {
+  return '₹' + Math.round(n).toLocaleString('en-IN');
+}
+
+function monthLabel(off) {
+  const d = new Date();
+  d.setDate(1);
+  d.setMonth(d.getMonth() + off);
+  return d.toLocaleString('en-IN', { month: 'long', year: 'numeric' });
+}
+
+function monthRange(off) {
+  const n = new Date();
+  return {
+    start: new Date(n.getFullYear(), n.getMonth() + off, 1),
+    end:   new Date(n.getFullYear(), n.getMonth() + off + 1, 1)
+  };
+}
+
+// ── Revenue helpers ───────────────────────────────────────────────────────────
+const HIST_INV = {"900001":{"mrpAmount":5484,"svcAmount":10224},"900002":{"mrpAmount":2742,"svcAmount":5112},"900003":{"mrpAmount":2742,"svcAmount":5112},"900004":{"mrpAmount":5484,"svcAmount":10224},"900005":{"mrpAmount":2742,"svcAmount":5112},"900006":{"mrpAmount":19193,"svcAmount":34084},"900007":{"mrpAmount":5484,"svcAmount":9824},"900008":{"mrpAmount":13709,"svcAmount":24260},"900009":{"mrpAmount":21934,"svcAmount":39296},"900010":{"mrpAmount":8226,"svcAmount":15036},"900011":{"mrpAmount":5484,"svcAmount":9224},"900012":{"mrpAmount":13709,"svcAmount":24860},"900013":{"mrpAmount":5484,"svcAmount":9824},"900014":{"mrpAmount":2742,"svcAmount":4612},"900015":{"mrpAmount":2742,"svcAmount":4612},"900016":{"mrpAmount":2742,"svcAmount":4812},"900017":{"mrpAmount":2742,"svcAmount":4812},"900018":{"mrpAmount":5484,"svcAmount":10224},"900019":{"mrpAmount":5484,"svcAmount":10824},"900020":{"mrpAmount":5484,"svcAmount":6924},"900021":{"mrpAmount":5484,"svcAmount":10224},"900022":{"mrpAmount":5484,"svcAmount":10824},"900023":{"mrpAmount":2742,"svcAmount":5112},"900024":{"mrpAmount":5484,"svcAmount":10824},"900025":{"mrpAmount":5484,"svcAmount":9224},"900026":{"mrpAmount":2742,"svcAmount":4612},"900027":{"mrpAmount":8226,"svcAmount":13836},"900028":{"mrpAmount":5484,"svcAmount":9224},"900029":{"mrpAmount":5484,"svcAmount":9224},"900030":{"mrpAmount":8226,"svcAmount":15336},"900031":{"mrpAmount":2742,"svcAmount":5112},"900032":{"mrpAmount":8226,"svcAmount":15336},"900033":{"mrpAmount":8226,"svcAmount":15336},"900034":{"mrpAmount":2742,"svcAmount":5112},"900035":{"mrpAmount":8226,"svcAmount":15336},"900036":{"mrpAmount":2742,"svcAmount":5112},"900037":{"mrpAmount":8226,"svcAmount":15336},"900038":{"mrpAmount":8226,"svcAmount":15336},"900039":{"mrpAmount":2742,"svcAmount":5112},"900040":{"mrpAmount":5484,"svcAmount":10224},"900041":{"mrpAmount":5484,"svcAmount":10224},"900042":{"mrpAmount":5484,"svcAmount":10224},"900043":{"mrpAmount":5484,"svcAmount":10224},"900044":{"mrpAmount":5484,"svcAmount":10224},"900045":{"mrpAmount":5484,"svcAmount":10224},"900046":{"mrpAmount":5484,"svcAmount":10224},"900047":{"mrpAmount":2742,"svcAmount":5112},"900048":{"mrpAmount":2742,"svcAmount":5112},"900049":{"mrpAmount":2742,"svcAmount":5112},"900050":{"mrpAmount":5484,"svcAmount":10224},"900051":{"mrpAmount":2742,"svcAmount":5112},"900052":{"mrpAmount":2742,"svcAmount":5112},"900053":{"mrpAmount":8226,"svcAmount":14736},"900054":{"mrpAmount":5484,"svcAmount":9824},"900055":{"mrpAmount":8226,"svcAmount":15516},"900056":{"mrpAmount":8226,"svcAmount":15516},"900057":{"mrpAmount":5484,"svcAmount":9624},"900058":{"mrpAmount":2742,"svcAmount":4612},"900059":{"mrpAmount":5484,"svcAmount":9624},"900060":{"mrpAmount":5484,"svcAmount":9624},"900061":{"mrpAmount":5484,"svcAmount":9224},"900062":{"mrpAmount":5484,"svcAmount":9624},"900063":{"mrpAmount":2742,"svcAmount":5012},"900064":{"mrpAmount":8226,"svcAmount":13836},"900065":{"mrpAmount":2742,"svcAmount":4912},"900066":{"mrpAmount":2742,"svcAmount":4912},"900067":{"mrpAmount":2742,"svcAmount":4612},"900068":{"mrpAmount":5484,"svcAmount":9224},"900069":{"mrpAmount":5484,"svcAmount":9224},"900070":{"mrpAmount":5484,"svcAmount":9824},"900071":{"mrpAmount":5484,"svcAmount":9824},"900072":{"mrpAmount":2742,"svcAmount":4312},"900073":{"mrpAmount":2742,"svcAmount":4812},"900074":{"mrpAmount":8226,"svcAmount":14736},"900075":{"mrpAmount":5484,"svcAmount":9824},"900076":{"mrpAmount":8226,"svcAmount":14736},"900077":{"mrpAmount":5484,"svcAmount":9824},"900078":{"mrpAmount":2742,"svcAmount":4912},"900079":{"mrpAmount":2742,"svcAmount":4912},"900080":{"mrpAmount":2742,"svcAmount":4912},"900081":{"mrpAmount":2742,"svcAmount":4912},"900082":{"mrpAmount":5484,"svcAmount":9824},"900083":{"mrpAmount":2742,"svcAmount":4912},"900084":{"mrpAmount":2742,"svcAmount":4912},"900085":{"mrpAmount":2742,"svcAmount":4912},"900086":{"mrpAmount":2742,"svcAmount":4912},"900087":{"mrpAmount":8226,"svcAmount":14436},"900088":{"mrpAmount":2742,"svcAmount":4812},"900089":{"mrpAmount":8226,"svcAmount":14436},"900090":{"mrpAmount":2742,"svcAmount":4812},"900091":{"mrpAmount":2742,"svcAmount":0},"900092":{"mrpAmount":10967,"svcAmount":0},"900093":{"mrpAmount":2742,"svcAmount":0},"900094":{"mrpAmount":5484,"svcAmount":0},"900095":{"mrpAmount":2742,"svcAmount":0},"900096":{"mrpAmount":5484,"svcAmount":0},"900097":{"mrpAmount":2742,"svcAmount":0},"900098":{"mrpAmount":8226,"svcAmount":0},"900099":{"mrpAmount":2742,"svcAmount":4712},"900100":{"mrpAmount":5484,"svcAmount":9424},"900101":{"mrpAmount":5484,"svcAmount":9424},"900102":{"mrpAmount":2742,"svcAmount":4712},"900103":{"mrpAmount":2742,"svcAmount":4712},"900104":{"mrpAmount":2742,"svcAmount":4912},"900105":{"mrpAmount":2742,"svcAmount":5692},"900106":{"mrpAmount":2742,"svcAmount":4912},"900107":{"mrpAmount":2742,"svcAmount":4812},"900108":{"mrpAmount":2742,"svcAmount":4812},"900109":{"mrpAmount":2742,"svcAmount":4812},"900110":{"mrpAmount":2742,"svcAmount":4812},"900111":{"mrpAmount":2742,"svcAmount":4812},"900112":{"mrpAmount":2742,"svcAmount":4812},"900113":{"mrpAmount":8226,"svcAmount":14436},"900114":{"mrpAmount":5484,"svcAmount":9624},"900115":{"mrpAmount":5484,"svcAmount":9624},"900116":{"mrpAmount":2742,"svcAmount":4812},"900117":{"mrpAmount":2742,"svcAmount":5012},"900118":{"mrpAmount":2742,"svcAmount":5012},"900119":{"mrpAmount":5484,"svcAmount":10024},"900120":{"mrpAmount":8226,"svcAmount":15336},"900121":{"mrpAmount":8226,"svcAmount":15336},"900122":{"mrpAmount":2742,"svcAmount":4912},"900123":{"mrpAmount":5484,"svcAmount":9824},"900124":{"mrpAmount":8226,"svcAmount":14736},"900125":{"mrpAmount":5484,"svcAmount":9824},"900126":{"mrpAmount":5484,"svcAmount":10604},"900127":{"mrpAmount":8226,"svcAmount":15516},"900128":{"mrpAmount":2742,"svcAmount":4912},"900129":{"mrpAmount":5484,"svcAmount":9824},"900130":{"mrpAmount":2742,"svcAmount":4912},"900131":{"mrpAmount":8226,"svcAmount":10936},"900132":{"mrpAmount":2742,"svcAmount":4912},"900133":{"mrpAmount":5484,"svcAmount":9824},"900134":{"mrpAmount":5484,"svcAmount":9824},"900135":{"mrpAmount":8226,"svcAmount":14736},"900136":{"mrpAmount":5484,"svcAmount":9224},"900137":{"mrpAmount":5484,"svcAmount":10424},"900138":{"mrpAmount":2742,"svcAmount":5212},"900139":{"mrpAmount":5484,"svcAmount":10424},"900140":{"mrpAmount":2742,"svcAmount":5212},"900141":{"mrpAmount":5484,"svcAmount":10424},"900142":{"mrpAmount":5484,"svcAmount":10424},"900143":{"mrpAmount":5484,"svcAmount":10424},"900144":{"mrpAmount":5484,"svcAmount":9824},"900145":{"mrpAmount":5484,"svcAmount":9824},"900146":{"mrpAmount":5484,"svcAmount":9824},"900147":{"mrpAmount":5484,"svcAmount":9824},"900148":{"mrpAmount":8226,"svcAmount":14436},"900149":{"mrpAmount":8226,"svcAmount":15336},"900150":{"mrpAmount":8226,"svcAmount":15336},"900151":{"mrpAmount":5484,"svcAmount":10224},"900152":{"mrpAmount":5484,"svcAmount":10224}};
+
+function getRevenue(o) {
+  const hist = HIST_INV[o.id];
+  const live = invData[o.id] || {};
+  if (hist) {
+    return {
+      mrp: (hist.mrpAmount || 0) - (Number(live.mrpDiscount) || 0),
+      svc: (hist.svcAmount || 0) - (Number(live.svcDiscount) || 0)
+    };
+  }
+  const litres = (o.items || []).reduce((s, i) => s + i.qty * i.size, 0);
+  return {
+    mrp: Math.ceil(MRP_PER_LITRE * 1.02 * litres) - (Number(live.mrpDiscount) || 0),
+    svc: -(Number(live.svcDiscount) || 0)
+  };
+}
+
+function allOrders() {
+  return [...orders, ...HISTORICAL_ORDERS].filter(o => {
+    const b = bars.find(x => x.id === o.barId) || { barName: '' };
+    return !b.barName.toLowerCase().includes('patel provision');
+  });
+}
+
+function ordersInRange(off) {
+  const { start, end } = monthRange(off);
+  return allOrders().filter(o => { const d = new Date(o.deliveryDate); return d >= start && d < end; });
+}
+
+// ── Charts ────────────────────────────────────────────────────────────────────
+const _charts = {};
+function destroyChart(id) { if (_charts[id]) { _charts[id].destroy(); delete _charts[id]; } }
+
+function makeBarChart(id, labels, datasets, yTickFmt) {
+  destroyChart(id);
+  const ctx = document.getElementById(id);
+  if (!ctx) return;
+  _charts[id] = new Chart(ctx, {
+    type: 'bar',
+    data: { labels: labels, datasets: datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: datasets.length > 1, labels: { font: { family: 'Plus Jakarta Sans', size: 11 }, boxWidth: 12 } } },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { family: 'Plus Jakarta Sans', size: 11 } } },
+        y: {
+          grid: { color: '#E6E2DB' },
+          ticks: {
+            font: { family: 'Plus Jakarta Sans', size: 11 },
+            callback: yTickFmt || (v => '₹' + Math.round(v / 1000) + 'k')
+          }
+        }
+      }
+    }
+  });
+}
+
+function makeDoughnut(id, labels, data, colors) {
+  destroyChart(id);
+  const ctx = document.getElementById(id);
+  if (!ctx) return;
+  _charts[id] = new Chart(ctx, {
+    type: 'doughnut',
+    data: { labels: labels, datasets: [{ data: data, backgroundColor: colors, borderWidth: 2, borderColor: '#fff' }] },
+    options: {
+      responsive: true, maintainAspectRatio: false, cutout: '65%',
+      plugins: { legend: { position: 'right', labels: { font: { family: 'Plus Jakarta Sans', size: 11 }, boxWidth: 10, padding: 10 } } }
+    }
+  });
+}
+
+// ── Period nav HTML helper ────────────────────────────────────────────────────
+function periodNav(off, incFn, decFn, resetFn) {
+  const isCurrent = off === 0;
+  return '<div class="period-nav">' +
+    '<button class="btn btn-ghost btn-sm" onclick="' + decFn + '">‹</button>' +
+    '<div class="period-label">' + monthLabel(off) + '</div>' +
+    '<button class="btn btn-ghost btn-sm" onclick="' + incFn + '" ' + (isCurrent ? 'style="opacity:0.3"' : '') + '>›</button>' +
+    (!isCurrent ? '<button class="btn btn-ghost btn-sm" onclick="' + resetFn + '">Today</button>' : '') +
+    '</div>';
+}
+
+// ── B2B tab ───────────────────────────────────────────────────────────────────
+function renderB2B() {
+  const off = b2bOff;
+  const monthOrders = ordersInRange(off);
+
+  let totalMRP = 0, totalSVC = 0;
+  monthOrders.forEach(o => { const r = getRevenue(o); totalMRP += r.mrp; totalSVC += r.svc; });
+  const totalRev = totalMRP + totalSVC;
+
+  // 6-month trend
+  const trend = [-5,-4,-3,-2,-1,0].map(m => {
+    let mrp = 0, svc = 0;
+    ordersInRange(m).forEach(o => { const r = getRevenue(o); mrp += r.mrp; svc += r.svc; });
+    const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() + m);
+    return { label: d.toLocaleString('en-IN', { month: 'short' }), mrp: mrp, svc: svc };
+  });
+
+  // Beer map
+  const beerMap = {};
+  BEERS.forEach(b => { beerMap[b.code] = { kegs: 0, litres: 0, mrp: 0, svc: 0 }; });
+  monthOrders.forEach(o => {
+    const r = getRevenue(o);
+    const totalL = (o.items || []).reduce((s, i) => s + i.qty * i.size, 0);
+    (o.items || []).forEach(i => {
+      if (!beerMap[i.beer]) beerMap[i.beer] = { kegs: 0, litres: 0, mrp: 0, svc: 0 };
+      beerMap[i.beer].kegs += i.qty;
+      beerMap[i.beer].litres += i.qty * i.size;
+      if (totalL > 0) {
+        const frac = (i.qty * i.size) / totalL;
+        beerMap[i.beer].mrp += r.mrp * frac;
+        beerMap[i.beer].svc += r.svc * frac;
+      }
+    });
+  });
+
+  // Bar map
+  const barMap = {};
+  monthOrders.forEach(o => {
+    const b = bars.find(x => x.id === o.barId) || { barName: 'Unknown' };
+    if (!barMap[b.barName]) barMap[b.barName] = { mrp: 0, svc: 0, kegs: 0 };
+    const r = getRevenue(o);
+    barMap[b.barName].mrp += r.mrp;
+    barMap[b.barName].svc += r.svc;
+    barMap[b.barName].kegs += (o.items || []).reduce((s, i) => s + i.qty, 0);
+  });
+
+  const beerRows = BEERS.map(b => {
+    const d = beerMap[b.code] || { kegs: 0, litres: 0, mrp: 0, svc: 0 };
+    const tot = d.mrp + d.svc;
+    return '<tr>' +
+      '<td><span class="badge" style="background:' + b.color + '22;color:' + b.color + '">' + b.code + '</span> <span style="color:var(--muted)">' + b.name + '</span></td>' +
+      '<td>' + d.kegs + '</td>' +
+      '<td>' + d.litres + 'L</td>' +
+      '<td>' + fmtINR(d.mrp) + '</td>' +
+      '<td>' + fmtINR(d.svc) + '</td>' +
+      '<td style="font-weight:700;color:var(--orange)">' + fmtINR(tot) + '</td>' +
+      '</tr>';
+  }).join('');
+
+  const topBars = Object.entries(barMap).sort((a,b) => (b[1].mrp+b[1].svc)-(a[1].mrp+a[1].svc)).slice(0, 12);
+  const barRows = topBars.map(function(entry) {
+    const name = entry[0];
+    const d = entry[1];
+    return '<tr>' +
+      '<td style="font-weight:600">' + name + '</td>' +
+      '<td>' + d.kegs + '</td>' +
+      '<td>' + fmtINR(d.mrp) + '</td>' +
+      '<td>' + fmtINR(d.svc) + '</td>' +
+      '<td style="font-weight:700;color:var(--orange)">' + fmtINR(d.mrp+d.svc) + '</td>' +
+      '</tr>';
+  }).join('');
+
+  document.getElementById('content').innerHTML =
+    periodNav(off, 'b2bOff++;renderB2B()', 'b2bOff--;renderB2B()', 'b2bOff=0;renderB2B()') +
+
+    '<div class="stat-row">' +
+      '<div class="stat-card"><div class="stat-num" style="color:var(--orange)">' + fmtINR(totalRev) + '</div><div class="stat-lbl">Total Revenue</div></div>' +
+      '<div class="stat-card"><div class="stat-num" style="color:var(--blue)">' + fmtINR(totalMRP) + '</div><div class="stat-lbl">MRP Revenue</div></div>' +
+      '<div class="stat-card"><div class="stat-num" style="color:var(--purple)">' + fmtINR(totalSVC) + '</div><div class="stat-lbl">Service Revenue</div></div>' +
+      '<div class="stat-card"><div class="stat-num" style="color:var(--green)">' + monthOrders.length + '</div><div class="stat-lbl">Orders</div></div>' +
+    '</div>' +
+
+    '<div class="card" style="margin-bottom:12px">' +
+      '<div class="card-title">6-Month Revenue Trend</div>' +
+      '<div class="chart-wrap"><canvas id="b2b-trend"></canvas></div>' +
+    '</div>' +
+
+    '<div class="grid2">' +
+      '<div class="card">' +
+        '<div class="card-title">Beer Mix</div>' +
+        '<div class="chart-wrap" style="height:200px"><canvas id="b2b-beer-donut"></canvas></div>' +
+      '</div>' +
+      '<div class="card">' +
+        '<div class="card-title">Beer-wise Breakdown</div>' +
+        '<div class="tbl-wrap"><table>' +
+          '<thead><tr><th>Beer</th><th>Kegs</th><th>Litres</th><th>MRP</th><th>Service</th><th>Total</th></tr></thead>' +
+          '<tbody>' + beerRows + '</tbody>' +
+        '</table></div>' +
+      '</div>' +
+    '</div>' +
+
+    '<div class="card">' +
+      '<div class="card-title">Top Bars — ' + monthLabel(off) + '</div>' +
+      '<div class="tbl-wrap"><table>' +
+        '<thead><tr><th>Bar</th><th>Kegs</th><th>MRP</th><th>Service</th><th>Total</th></tr></thead>' +
+        '<tbody>' + (barRows || '<tr><td colspan="5" class="empty">No orders this month</td></tr>') + '</tbody>' +
+      '</table></div>' +
+    '</div>';
+
+  makeBarChart('b2b-trend',
+    trend.map(t => t.label),
+    [
+      { label: 'MRP',     data: trend.map(t => t.mrp), backgroundColor: '#2563EB88', borderColor: '#2563EB', borderWidth: 2, borderRadius: 4 },
+      { label: 'Service', data: trend.map(t => t.svc), backgroundColor: '#7C3AED88', borderColor: '#7C3AED', borderWidth: 2, borderRadius: 4 }
+    ]
+  );
+
+  const beerTotals = BEERS.map(b => (beerMap[b.code] ? beerMap[b.code].mrp + beerMap[b.code].svc : 0));
+  makeDoughnut('b2b-beer-donut', BEERS.map(b => b.name), beerTotals, BEERS.map(b => b.color));
+}
+
+// ── Growler tab ───────────────────────────────────────────────────────────────
+function renderGrowlers() {
+  const off = growOff;
+  const { start, end } = monthRange(off);
+  const monthSales = growlerSales.filter(s => { const d = new Date(s.date); return d >= start && d < end; });
+
+  let totalMRP = 0, totalSVC = 0;
+  monthSales.forEach(s => { totalMRP += Number(s.mrpAmount) || 0; totalSVC += Number(s.svcAmount) || 0; });
+
+  const rows = monthSales.slice().sort((a,b) => b.date.localeCompare(a.date)).map(s => {
+    const bi = BEERS.find(b => b.code === s.beer) || {};
+    return '<tr>' +
+      '<td>' + fmtDate(s.date) + '</td>' +
+      '<td><span class="badge" style="background:' + (bi.color||'#888') + '22;color:' + (bi.color||'#888') + '">' + s.beer + '</span></td>' +
+      '<td>' + s.volume + 'L</td>' +
+      '<td>' + fmtINR(s.mrpAmount||0) + '</td>' +
+      '<td>' + fmtINR(s.svcAmount||0) + '</td>' +
+      '<td style="font-weight:700;color:var(--orange)">' + fmtINR((s.mrpAmount||0)+(s.svcAmount||0)) + '</td>' +
+      '<td><button class="btn btn-danger btn-sm" onclick="deleteGrowler(\'' + s.id + '\')">✕</button></td>' +
+    '</tr>';
+  }).join('');
+
+  const trend = [-5,-4,-3,-2,-1,0].map(m => {
+    const { start: s, end: e } = monthRange(m);
+    let mrp = 0, svc = 0;
+    growlerSales.filter(gs => { const d = new Date(gs.date); return d >= s && d < e; })
+      .forEach(gs => { mrp += Number(gs.mrpAmount)||0; svc += Number(gs.svcAmount)||0; });
+    const dt = new Date(); dt.setDate(1); dt.setMonth(dt.getMonth() + m);
+    return { label: dt.toLocaleString('en-IN', { month: 'short' }), mrp: mrp, svc: svc };
+  });
+
+  document.getElementById('content').innerHTML =
+    '<div class="period-nav">' +
+      '<button class="btn btn-ghost btn-sm" onclick="growOff--;renderGrowlers()">‹</button>' +
+      '<div class="period-label">' + monthLabel(off) + '</div>' +
+      '<button class="btn btn-ghost btn-sm" onclick="growOff++;renderGrowlers()" ' + (off===0?'style="opacity:0.3"':'') + '>›</button>' +
+      (off!==0?'<button class="btn btn-ghost btn-sm" onclick="growOff=0;renderGrowlers()">Today</button>':'') +
+      '<button class="btn btn-primary btn-sm" style="margin-left:auto" onclick="showAddGrowler()">+ Add Entry</button>' +
+    '</div>' +
+
+    '<div class="stat-row" style="grid-template-columns:1fr 1fr 1fr">' +
+      '<div class="stat-card"><div class="stat-num" style="color:var(--orange)">' + fmtINR(totalMRP+totalSVC) + '</div><div class="stat-lbl">Total Revenue</div></div>' +
+      '<div class="stat-card"><div class="stat-num" style="color:var(--blue)">' + fmtINR(totalMRP) + '</div><div class="stat-lbl">MRP Revenue</div></div>' +
+      '<div class="stat-card"><div class="stat-num" style="color:var(--purple)">' + fmtINR(totalSVC) + '</div><div class="stat-lbl">Service Revenue</div></div>' +
+    '</div>' +
+
+    '<div class="grid2">' +
+      '<div class="card">' +
+        '<div class="card-title">Monthly Trend</div>' +
+        '<div class="chart-wrap"><canvas id="growl-trend"></canvas></div>' +
+      '</div>' +
+      '<div class="card">' +
+        '<div class="card-title">Entries — ' + monthLabel(off) + '</div>' +
+        '<div class="tbl-wrap"><table>' +
+          '<thead><tr><th>Date</th><th>Beer</th><th>Volume</th><th>MRP</th><th>Service</th><th>Total</th><th></th></tr></thead>' +
+          '<tbody>' + (rows || '<tr><td colspan="7" class="empty">No entries this month. Use + Add Entry to record a sale.</td></tr>') + '</tbody>' +
+        '</table></div>' +
+      '</div>' +
+    '</div>';
+
+  makeBarChart('growl-trend',
+    trend.map(t => t.label),
+    [
+      { label: 'MRP',     data: trend.map(t => t.mrp), backgroundColor: '#2563EB88', borderColor: '#2563EB', borderWidth: 2, borderRadius: 4 },
+      { label: 'Service', data: trend.map(t => t.svc), backgroundColor: '#7C3AED88', borderColor: '#7C3AED', borderWidth: 2, borderRadius: 4 }
+    ]
+  );
+}
+
+function showAddGrowler() {
+  const today = new Date().toISOString().slice(0, 10);
+  const beerOpts = BEERS.map(b => '<option value="' + b.code + '">' + b.code + ' — ' + b.name + '</option>').join('');
+  document.getElementById('modal-root').innerHTML =
+    '<div class="modal-overlay" onclick="if(event.target===this)closeModal()">' +
+      '<div class="modal-box">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">' +
+          '<div style="font-size:15px;font-weight:700">Add Growler Entry</div>' +
+          '<button onclick="closeModal()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--muted);line-height:1">×</button>' +
+        '</div>' +
+        '<div style="display:grid;gap:12px">' +
+          '<div><label class="lbl">Date</label><input id="g-date" type="date" class="inp" style="width:100%" value="' + today + '"></div>' +
+          '<div><label class="lbl">Beer</label><select id="g-beer" class="inp" style="width:100%">' + beerOpts + '</select></div>' +
+          '<div><label class="lbl">Volume (L)</label><input id="g-vol" type="number" class="inp" style="width:100%" placeholder="e.g. 120"></div>' +
+          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">' +
+            '<div><label class="lbl">MRP Amount (₹)</label><input id="g-mrp" type="number" class="inp" style="width:100%" placeholder="0"></div>' +
+            '<div><label class="lbl">Service Amount (₹)</label><input id="g-svc" type="number" class="inp" style="width:100%" placeholder="0"></div>' +
+          '</div>' +
+        '</div>' +
+        '<div style="display:flex;gap:10px;margin-top:18px;justify-content:flex-end">' +
+          '<button class="btn btn-ghost" onclick="closeModal()">Cancel</button>' +
+          '<button class="btn btn-primary" onclick="saveGrowlerEntry()">Save Entry</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+}
+
+async function saveGrowlerEntry() {
+  const date = document.getElementById('g-date').value;
+  const beer = document.getElementById('g-beer').value;
+  const volume = Number(document.getElementById('g-vol').value) || 0;
+  const mrpAmount = Number(document.getElementById('g-mrp').value) || 0;
+  const svcAmount = Number(document.getElementById('g-svc').value) || 0;
+  if (!date || !beer) { alert('Please fill in date and beer.'); return; }
+  growlerSales.push({ id: uid(), date: date, beer: beer, volume: volume, mrpAmount: mrpAmount, svcAmount: svcAmount });
+  await saveGrowlers();
+  closeModal();
+  renderGrowlers();
+}
+
+async function deleteGrowler(id) {
+  if (!confirm('Delete this entry?')) return;
+  growlerSales = growlerSales.filter(s => s.id !== id);
+  await saveGrowlers();
+  renderGrowlers();
+}
+
+// ── Consolidated tab ──────────────────────────────────────────────────────────
+function renderConsolidated() {
+  const off = consOff;
+  const { start, end } = monthRange(off);
+  const monthOrders = ordersInRange(off);
+  const monthGrow = growlerSales.filter(s => { const d = new Date(s.date); return d >= start && d < end; });
+
+  let b2bMRP = 0, b2bSVC = 0;
+  monthOrders.forEach(o => { const r = getRevenue(o); b2bMRP += r.mrp; b2bSVC += r.svc; });
+  let grMRP = 0, grSVC = 0;
+  monthGrow.forEach(s => { grMRP += Number(s.mrpAmount)||0; grSVC += Number(s.svcAmount)||0; });
+
+  const totalMRP = b2bMRP + grMRP;
+  const totalSVC = b2bSVC + grSVC;
+  const total = totalMRP + totalSVC;
+
+  const trend = [-5,-4,-3,-2,-1,0].map(m => {
+    let bM = 0, bS = 0;
+    ordersInRange(m).forEach(o => { const r = getRevenue(o); bM += r.mrp; bS += r.svc; });
+    const { start: gs, end: ge } = monthRange(m);
+    let gM = 0, gS = 0;
+    growlerSales.filter(s => { const d = new Date(s.date); return d >= gs && d < ge; })
+      .forEach(s => { gM += Number(s.mrpAmount)||0; gS += Number(s.svcAmount)||0; });
+    const dt = new Date(); dt.setDate(1); dt.setMonth(dt.getMonth() + m);
+    return { label: dt.toLocaleString('en-IN', { month: 'short' }), b2b: bM+bS, grow: gM+gS };
+  });
+
+  document.getElementById('content').innerHTML =
+    periodNav(off, 'consOff++;renderConsolidated()', 'consOff--;renderConsolidated()', 'consOff=0;renderConsolidated()') +
+
+    '<div class="stat-row">' +
+      '<div class="stat-card"><div class="stat-num" style="color:var(--orange)">' + fmtINR(total) + '</div><div class="stat-lbl">Total Revenue</div></div>' +
+      '<div class="stat-card"><div class="stat-num" style="color:var(--blue)">' + fmtINR(b2bMRP+b2bSVC) + '</div><div class="stat-lbl">B2B Revenue</div></div>' +
+      '<div class="stat-card"><div class="stat-num" style="color:var(--purple)">' + fmtINR(grMRP+grSVC) + '</div><div class="stat-lbl">Growler Revenue</div></div>' +
+      '<div class="stat-card"><div class="stat-num" style="color:var(--green)">' + fmtINR(totalMRP) + '</div><div class="stat-lbl">Total MRP</div></div>' +
+    '</div>' +
+
+    '<div class="grid2">' +
+      '<div class="card">' +
+        '<div class="card-title">6-Month Revenue by Channel</div>' +
+        '<div class="chart-wrap"><canvas id="cons-trend"></canvas></div>' +
+      '</div>' +
+      '<div class="card">' +
+        '<div class="card-title">Revenue Split — ' + monthLabel(off) + '</div>' +
+        '<div style="display:grid;gap:10px;margin-top:4px">' +
+          '<div class="rev-tile">' +
+            '<div class="rev-tile-title">B2B (' + monthOrders.length + ' orders)</div>' +
+            '<div class="rev-tile-row"><span>MRP</span><b>' + fmtINR(b2bMRP) + '</b><span>Service</span><b>' + fmtINR(b2bSVC) + '</b></div>' +
+            '<div class="rev-tile-total">' + fmtINR(b2bMRP+b2bSVC) + '</div>' +
+          '</div>' +
+          '<div class="rev-tile">' +
+            '<div class="rev-tile-title">Growlers (' + monthGrow.length + ' entries)</div>' +
+            '<div class="rev-tile-row"><span>MRP</span><b>' + fmtINR(grMRP) + '</b><span>Service</span><b>' + fmtINR(grSVC) + '</b></div>' +
+            '<div class="rev-tile-total">' + fmtINR(grMRP+grSVC) + '</div>' +
+          '</div>' +
+          '<div style="padding:14px 16px;background:var(--orange-light);border:1px solid var(--orange);border-radius:var(--radius-sm);display:flex;justify-content:space-between;align-items:center">' +
+            '<span style="font-weight:700;font-size:13px">Grand Total</span>' +
+            '<span style="font-size:22px;font-weight:800;color:var(--orange)">' + fmtINR(total) + '</span>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+
+  makeBarChart('cons-trend',
+    trend.map(t => t.label),
+    [
+      { label: 'B2B',     data: trend.map(t => t.b2b),  backgroundColor: '#C8721A88', borderColor: '#C8721A', borderWidth: 2, borderRadius: 4 },
+      { label: 'Growlers',data: trend.map(t => t.grow), backgroundColor: '#7C3AED88', borderColor: '#7C3AED', borderWidth: 2, borderRadius: 4 }
+    ]
+  );
+}
+
+function closeModal() { document.getElementById('modal-root').innerHTML = ''; }
+
+function render() {
+  if (currentTab === 'b2b') renderB2B();
+  else if (currentTab === 'growlers') renderGrowlers();
+  else renderConsolidated();
+}
+
+document.getElementById('login-pw').focus();
+</script>
+
+<script>
+// Historical orders for FY26-27 (Apr 2026 onward)
+const HISTORICAL_ORDERS = [{"id":"900001","barId":60,"deliveryDate":"2026-04-02","tpTotal":2,"items":[{"beer":"MP","size":20,"qty":1},{"beer":"DC","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-04-02T09:00:00.000Z","source":"historical"},{"id":"900002","barId":60,"deliveryDate":"2026-04-09","tpTotal":1,"items":[{"beer":"MP","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-04-09T09:00:00.000Z","source":"historical"},{"id":"900003","barId":60,"deliveryDate":"2026-04-17","tpTotal":1,"items":[{"beer":"MP","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-04-17T09:00:00.000Z","source":"historical"},{"id":"900004","barId":60,"deliveryDate":"2026-04-23","tpTotal":2,"items":[{"beer":"MP","size":20,"qty":1},{"beer":"DC","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-04-23T09:00:00.000Z","source":"historical"},{"id":"900005","barId":60,"deliveryDate":"2026-05-21","tpTotal":1,"items":[{"beer":"MP","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-05-21T09:00:00.000Z","source":"historical"},{"id":"900006","barId":69,"deliveryDate":"2026-04-06","tpTotal":7,"items":[{"beer":"DC","size":20,"qty":1},{"beer":"DC","size":20,"qty":2},{"beer":"MP","size":20,"qty":4}],"notes":"","status":"delivered","createdAt":"2026-04-06T09:00:00.000Z","source":"historical"},{"id":"900007","barId":69,"deliveryDate":"2026-04-17","tpTotal":2,"items":[{"beer":"MP","size":20,"qty":1},{"beer":"DC","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-04-17T09:00:00.000Z","source":"historical"},{"id":"900008","barId":69,"deliveryDate":"2026-04-18","tpTotal":5,"items":[{"beer":"DC","size":20,"qty":2},{"beer":"MP","size":20,"qty":3}],"notes":"","status":"delivered","createdAt":"2026-04-18T09:00:00.000Z","source":"historical"},{"id":"900009","barId":69,"deliveryDate":"2026-04-29","tpTotal":9,"items":[{"beer":"MP","size":20,"qty":4},{"beer":"DC","size":20,"qty":4},{"beer":"OW","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-04-29T09:00:00.000Z","source":"historical"},{"id":"900010","barId":69,"deliveryDate":"2026-05-05","tpTotal":3,"items":[{"beer":"DC","size":20,"qty":2},{"beer":"MP","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-05-05T09:00:00.000Z","source":"historical"},{"id":"900011","barId":69,"deliveryDate":"2026-05-13","tpTotal":2,"items":[{"beer":"MP","size":20,"qty":2}],"notes":"","status":"delivered","createdAt":"2026-05-13T09:00:00.000Z","source":"historical"},{"id":"900012","barId":69,"deliveryDate":"2026-05-19","tpTotal":5,"items":[{"beer":"MP","size":20,"qty":2},{"beer":"DC","size":20,"qty":3}],"notes":"","status":"delivered","createdAt":"2026-05-19T09:00:00.000Z","source":"historical"},{"id":"900013","barId":61,"deliveryDate":"2026-05-08","tpTotal":2,"items":[{"beer":"BB","size":20,"qty":2}],"notes":"","status":"delivered","createdAt":"2026-05-08T09:00:00.000Z","source":"historical"},{"id":"900014","barId":44,"deliveryDate":"2026-04-30","tpTotal":1,"items":[{"beer":"MP","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-04-30T09:00:00.000Z","source":"historical"},{"id":"900015","barId":44,"deliveryDate":"2026-05-08","tpTotal":1,"items":[{"beer":"GR","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-05-08T09:00:00.000Z","source":"historical"},{"id":"900016","barId":4,"deliveryDate":"2026-04-09","tpTotal":1,"items":[{"beer":"MP","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-04-09T09:00:00.000Z","source":"historical"},{"id":"900017","barId":4,"deliveryDate":"2026-05-14","tpTotal":1,"items":[{"beer":"DC","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-05-14T09:00:00.000Z","source":"historical"},{"id":"900018","barId":58,"deliveryDate":"2026-04-02","tpTotal":2,"items":[{"beer":"MP","size":20,"qty":1},{"beer":"GR","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-04-02T09:00:00.000Z","source":"historical"},{"id":"900019","barId":58,"deliveryDate":"2026-04-09","tpTotal":2,"items":[{"beer":"DC","size":20,"qty":1},{"beer":"GR","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-04-09T09:00:00.000Z","source":"historical"},{"id":"900020","barId":58,"deliveryDate":"2026-04-17","tpTotal":2,"items":[{"beer":"DC","size":20,"qty":1},{"beer":"MP","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-04-17T09:00:00.000Z","source":"historical"},{"id":"900021","barId":58,"deliveryDate":"2026-04-30","tpTotal":2,"items":[{"beer":"GR","size":20,"qty":1},{"beer":"MP","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-04-30T09:00:00.000Z","source":"historical"},{"id":"900022","barId":58,"deliveryDate":"2026-05-08","tpTotal":2,"items":[{"beer":"MP","size":20,"qty":1},{"beer":"DC","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-05-08T09:00:00.000Z","source":"historical"},{"id":"900023","barId":58,"deliveryDate":"2026-05-14","tpTotal":1,"items":[{"beer":"GR","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-05-14T09:00:00.000Z","source":"historical"},{"id":"900024","barId":58,"deliveryDate":"2026-05-21","tpTotal":2,"items":[{"beer":"DC","size":20,"qty":1},{"beer":"MP","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-05-21T09:00:00.000Z","source":"historical"},{"id":"900025","barId":20,"deliveryDate":"2026-04-17","tpTotal":2,"items":[{"beer":"BB","size":20,"qty":1},{"beer":"MP","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-04-17T09:00:00.000Z","source":"historical"},{"id":"900026","barId":20,"deliveryDate":"2026-05-14","tpTotal":1,"items":[{"beer":"MP","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-05-14T09:00:00.000Z","source":"historical"},{"id":"900027","barId":21,"deliveryDate":"2026-04-17","tpTotal":3,"items":[{"beer":"MP","size":20,"qty":2},{"beer":"BB","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-04-17T09:00:00.000Z","source":"historical"},{"id":"900028","barId":21,"deliveryDate":"2026-04-23","tpTotal":2,"items":[{"beer":"BB","size":20,"qty":1},{"beer":"MP","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-04-23T09:00:00.000Z","source":"historical"},{"id":"900029","barId":21,"deliveryDate":"2026-05-14","tpTotal":2,"items":[{"beer":"BB","size":20,"qty":1},{"beer":"MP","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-05-14T09:00:00.000Z","source":"historical"},{"id":"900030","barId":26,"deliveryDate":"2026-04-02","tpTotal":3,"items":[{"beer":"MP","size":20,"qty":3}],"notes":"","status":"delivered","createdAt":"2026-04-02T09:00:00.000Z","source":"historical"},{"id":"900031","barId":26,"deliveryDate":"2026-04-09","tpTotal":1,"items":[{"beer":"MP","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-04-09T09:00:00.000Z","source":"historical"},{"id":"900032","barId":26,"deliveryDate":"2026-04-17","tpTotal":3,"items":[{"beer":"MP","size":20,"qty":3}],"notes":"","status":"delivered","createdAt":"2026-04-17T09:00:00.000Z","source":"historical"},{"id":"900033","barId":26,"deliveryDate":"2026-04-23","tpTotal":3,"items":[{"beer":"MP","size":20,"qty":3}],"notes":"","status":"delivered","createdAt":"2026-04-23T09:00:00.000Z","source":"historical"},{"id":"900034","barId":26,"deliveryDate":"2026-04-30","tpTotal":1,"items":[{"beer":"MP","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-04-30T09:00:00.000Z","source":"historical"},{"id":"900035","barId":26,"deliveryDate":"2026-05-08","tpTotal":3,"items":[{"beer":"MP","size":20,"qty":3}],"notes":"","status":"delivered","createdAt":"2026-05-08T09:00:00.000Z","source":"historical"},{"id":"900036","barId":26,"deliveryDate":"2026-05-14","tpTotal":1,"items":[{"beer":"MP","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-05-14T09:00:00.000Z","source":"historical"},{"id":"900037","barId":26,"deliveryDate":"2026-05-21","tpTotal":3,"items":[{"beer":"MP","size":20,"qty":3}],"notes":"","status":"delivered","createdAt":"2026-05-21T09:00:00.000Z","source":"historical"},{"id":"900038","barId":66,"deliveryDate":"2026-04-02","tpTotal":3,"items":[{"beer":"DC","size":20,"qty":2},{"beer":"MP","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-04-02T09:00:00.000Z","source":"historical"},{"id":"900039","barId":66,"deliveryDate":"2026-04-17","tpTotal":1,"items":[{"beer":"DC","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-04-17T09:00:00.000Z","source":"historical"},{"id":"900040","barId":66,"deliveryDate":"2026-04-23","tpTotal":2,"items":[{"beer":"DC","size":20,"qty":1},{"beer":"MP","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-04-23T09:00:00.000Z","source":"historical"},{"id":"900041","barId":66,"deliveryDate":"2026-04-30","tpTotal":2,"items":[{"beer":"MP","size":20,"qty":1},{"beer":"DC","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-04-30T09:00:00.000Z","source":"historical"},{"id":"900042","barId":66,"deliveryDate":"2026-05-08","tpTotal":2,"items":[{"beer":"DC","size":20,"qty":1},{"beer":"MP","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-05-08T09:00:00.000Z","source":"historical"},{"id":"900043","barId":66,"deliveryDate":"2026-05-14","tpTotal":2,"items":[{"beer":"DC","size":20,"qty":1},{"beer":"MP","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-05-14T09:00:00.000Z","source":"historical"},{"id":"900044","barId":66,"deliveryDate":"2026-05-21","tpTotal":2,"items":[{"beer":"MP","size":20,"qty":1},{"beer":"DC","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-05-21T09:00:00.000Z","source":"historical"},{"id":"900045","barId":62,"deliveryDate":"2026-04-09","tpTotal":3,"items":[{"beer":"MP","size":20,"qty":1},{"beer":"MP","size":20,"qty":2}],"notes":"","status":"delivered","createdAt":"2026-04-09T09:00:00.000Z","source":"historical"},{"id":"900046","barId":62,"deliveryDate":"2026-04-23","tpTotal":2,"items":[{"beer":"MP","size":20,"qty":2}],"notes":"","status":"delivered","createdAt":"2026-04-23T09:00:00.000Z","source":"historical"},{"id":"900047","barId":62,"deliveryDate":"2026-04-30","tpTotal":1,"items":[{"beer":"MP","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-04-30T09:00:00.000Z","source":"historical"},{"id":"900048","barId":62,"deliveryDate":"2026-05-21","tpTotal":1,"items":[{"beer":"MP","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-05-21T09:00:00.000Z","source":"historical"},{"id":"900049","barId":49,"deliveryDate":"2026-04-02","tpTotal":1,"items":[{"beer":"MP","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-04-02T09:00:00.000Z","source":"historical"},{"id":"900050","barId":49,"deliveryDate":"2026-04-09","tpTotal":1,"items":[{"beer":"GR","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-04-09T09:00:00.000Z","source":"historical"},{"id":"900051","barId":49,"deliveryDate":"2026-05-14","tpTotal":1,"items":[{"beer":"MP","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-05-14T09:00:00.000Z","source":"historical"},{"id":"900052","barId":49,"deliveryDate":"2026-05-21","tpTotal":1,"items":[{"beer":"MP","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-05-21T09:00:00.000Z","source":"historical"},{"id":"900053","barId":68,"deliveryDate":"2026-04-02","tpTotal":3,"items":[{"beer":"DC","size":20,"qty":1},{"beer":"MP","size":20,"qty":1},{"beer":"OW","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-04-02T09:00:00.000Z","source":"historical"},{"id":"900054","barId":68,"deliveryDate":"2026-04-17","tpTotal":2,"items":[{"beer":"GR","size":20,"qty":1},{"beer":"MP","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-04-17T09:00:00.000Z","source":"historical"},{"id":"900055","barId":68,"deliveryDate":"2026-05-08","tpTotal":3,"items":[{"beer":"DC","size":20,"qty":1},{"beer":"GR","size":20,"qty":1},{"beer":"MP","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-05-08T09:00:00.000Z","source":"historical"},{"id":"900056","barId":68,"deliveryDate":"2026-05-21","tpTotal":3,"items":[{"beer":"DC","size":20,"qty":1},{"beer":"MP","size":20,"qty":1},{"beer":"GR","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-05-21T09:00:00.000Z","source":"historical"},{"id":"900057","barId":18,"deliveryDate":"2026-04-02","tpTotal":2,"items":[{"beer":"DC","size":20,"qty":1},{"beer":"MP","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-04-02T09:00:00.000Z","source":"historical"},{"id":"900058","barId":18,"deliveryDate":"2026-04-09","tpTotal":1,"items":[{"beer":"MP","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-04-09T09:00:00.000Z","source":"historical"},{"id":"900059","barId":18,"deliveryDate":"2026-04-17","tpTotal":2,"items":[{"beer":"DC","size":20,"qty":1},{"beer":"MP","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-04-17T09:00:00.000Z","source":"historical"},{"id":"900060","barId":18,"deliveryDate":"2026-04-23","tpTotal":2,"items":[{"beer":"DC","size":20,"qty":1},{"beer":"MP","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-04-23T09:00:00.000Z","source":"historical"},{"id":"900061","barId":18,"deliveryDate":"2026-05-08","tpTotal":2,"items":[{"beer":"MP","size":20,"qty":2}],"notes":"","status":"delivered","createdAt":"2026-05-08T09:00:00.000Z","source":"historical"},{"id":"900062","barId":18,"deliveryDate":"2026-05-14","tpTotal":2,"items":[{"beer":"MP","size":20,"qty":1},{"beer":"DC","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-05-14T09:00:00.000Z","source":"historical"},{"id":"900063","barId":18,"deliveryDate":"2026-05-21","tpTotal":1,"items":[{"beer":"DC","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-05-21T09:00:00.000Z","source":"historical"},{"id":"900064","barId":72,"deliveryDate":"2026-04-06","tpTotal":3,"items":[{"beer":"BB","size":20,"qty":1},{"beer":"MP","size":20,"qty":2}],"notes":"","status":"delivered","createdAt":"2026-04-06T09:00:00.000Z","source":"historical"},{"id":"900065","barId":72,"deliveryDate":"2026-04-18","tpTotal":1,"items":[{"beer":"BB","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-04-18T09:00:00.000Z","source":"historical"},{"id":"900066","barId":72,"deliveryDate":"2026-04-29","tpTotal":1,"items":[{"beer":"MP","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-04-29T09:00:00.000Z","source":"historical"},{"id":"900067","barId":72,"deliveryDate":"2026-05-05","tpTotal":1,"items":[{"beer":"MP","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-05-05T09:00:00.000Z","source":"historical"},{"id":"900068","barId":72,"deliveryDate":"2026-05-13","tpTotal":2,"items":[{"beer":"MP","size":20,"qty":1},{"beer":"BB","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-05-13T09:00:00.000Z","source":"historical"},{"id":"900069","barId":72,"deliveryDate":"2026-05-19","tpTotal":2,"items":[{"beer":"BB","size":20,"qty":1},{"beer":"MP","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-05-19T09:00:00.000Z","source":"historical"},{"id":"900070","barId":33,"deliveryDate":"2026-04-17","tpTotal":2,"items":[{"beer":"MP","size":20,"qty":1},{"beer":"BB","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-04-17T09:00:00.000Z","source":"historical"},{"id":"900071","barId":33,"deliveryDate":"2026-05-08","tpTotal":2,"items":[{"beer":"MP","size":20,"qty":1},{"beer":"BB","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-05-08T09:00:00.000Z","source":"historical"},{"id":"900072","barId":22,"deliveryDate":"2026-04-02","tpTotal":1,"items":[{"beer":"BB","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-04-02T09:00:00.000Z","source":"historical"},{"id":"900073","barId":22,"deliveryDate":"2026-05-08","tpTotal":1,"items":[{"beer":"BB","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-05-08T09:00:00.000Z","source":"historical"},{"id":"900074","barId":51,"deliveryDate":"2026-04-17","tpTotal":3,"items":[{"beer":"DC","size":20,"qty":1},{"beer":"BB","size":20,"qty":1},{"beer":"MP","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-04-17T09:00:00.000Z","source":"historical"},{"id":"900075","barId":51,"deliveryDate":"2026-05-21","tpTotal":2,"items":[{"beer":"MP","size":20,"qty":1},{"beer":"DC","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-05-21T09:00:00.000Z","source":"historical"},{"id":"900076","barId":67,"deliveryDate":"2026-04-02","tpTotal":3,"items":[{"beer":"BB","size":20,"qty":1},{"beer":"MP","size":20,"qty":1},{"beer":"DC","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-04-02T09:00:00.000Z","source":"historical"},{"id":"900077","barId":67,"deliveryDate":"2026-04-09","tpTotal":2,"items":[{"beer":"MP","size":20,"qty":2}],"notes":"","status":"delivered","createdAt":"2026-04-09T09:00:00.000Z","source":"historical"},{"id":"900078","barId":67,"deliveryDate":"2026-04-23","tpTotal":1,"items":[{"beer":"DC","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-04-23T09:00:00.000Z","source":"historical"},{"id":"900079","barId":67,"deliveryDate":"2026-04-30","tpTotal":1,"items":[{"beer":"MP","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-04-30T09:00:00.000Z","source":"historical"},{"id":"900080","barId":67,"deliveryDate":"2026-05-08","tpTotal":1,"items":[{"beer":"BB","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-05-08T09:00:00.000Z","source":"historical"},{"id":"900081","barId":67,"deliveryDate":"2026-05-14","tpTotal":1,"items":[{"beer":"MP","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-05-14T09:00:00.000Z","source":"historical"},{"id":"900082","barId":41,"deliveryDate":"2026-04-17","tpTotal":2,"items":[{"beer":"MP","size":20,"qty":1},{"beer":"DC","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-04-17T09:00:00.000Z","source":"historical"},{"id":"900083","barId":32,"deliveryDate":"2026-04-09","tpTotal":1,"items":[{"beer":"DC","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-04-09T09:00:00.000Z","source":"historical"},{"id":"900084","barId":32,"deliveryDate":"2026-04-17","tpTotal":1,"items":[{"beer":"MP","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-04-17T09:00:00.000Z","source":"historical"},{"id":"900085","barId":32,"deliveryDate":"2026-05-08","tpTotal":1,"items":[{"beer":"MP","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-05-08T09:00:00.000Z","source":"historical"},{"id":"900086","barId":32,"deliveryDate":"2026-05-21","tpTotal":1,"items":[{"beer":"DC","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-05-21T09:00:00.000Z","source":"historical"},{"id":"900087","barId":70,"deliveryDate":"2026-04-23","tpTotal":3,"items":[{"beer":"BB","size":20,"qty":1},{"beer":"GR","size":20,"qty":1},{"beer":"MP","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-04-23T09:00:00.000Z","source":"historical"},{"id":"900088","barId":70,"deliveryDate":"2026-04-30","tpTotal":2,"items":[{"beer":"GR","size":20,"qty":1},{"beer":"MP","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-04-30T09:00:00.000Z","source":"historical"},{"id":"900089","barId":70,"deliveryDate":"2026-05-08","tpTotal":3,"items":[{"beer":"BB","size":20,"qty":1},{"beer":"MP","size":20,"qty":1},{"beer":"GR","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-05-08T09:00:00.000Z","source":"historical"},{"id":"900090","barId":70,"deliveryDate":"2026-05-21","tpTotal":1,"items":[{"beer":"BB","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-05-21T09:00:00.000Z","source":"historical"},{"id":"900091","barId":63,"deliveryDate":"2026-04-02","tpTotal":1,"items":[{"beer":"DC","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-04-02T09:00:00.000Z","source":"historical"},{"id":"900092","barId":63,"deliveryDate":"2026-04-09","tpTotal":4,"items":[{"beer":"BB","size":20,"qty":1},{"beer":"DC","size":20,"qty":1},{"beer":"OW","size":20,"qty":1},{"beer":"MP","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-04-09T09:00:00.000Z","source":"historical"},{"id":"900093","barId":63,"deliveryDate":"2026-04-17","tpTotal":1,"items":[{"beer":"GR","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-04-17T09:00:00.000Z","source":"historical"},{"id":"900094","barId":63,"deliveryDate":"2026-04-23","tpTotal":2,"items":[{"beer":"DC","size":20,"qty":1},{"beer":"MP","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-04-23T09:00:00.000Z","source":"historical"},{"id":"900095","barId":63,"deliveryDate":"2026-04-30","tpTotal":1,"items":[{"beer":"DC","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-04-30T09:00:00.000Z","source":"historical"},{"id":"900096","barId":63,"deliveryDate":"2026-05-08","tpTotal":2,"items":[{"beer":"GR","size":20,"qty":1},{"beer":"BB","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-05-08T09:00:00.000Z","source":"historical"},{"id":"900097","barId":63,"deliveryDate":"2026-05-14","tpTotal":1,"items":[{"beer":"MP","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-05-14T09:00:00.000Z","source":"historical"},{"id":"900098","barId":63,"deliveryDate":"2026-05-21","tpTotal":3,"items":[{"beer":"BB","size":20,"qty":1},{"beer":"OW","size":20,"qty":1},{"beer":"DC","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-05-21T09:00:00.000Z","source":"historical"},{"id":"900099","barId":52,"deliveryDate":"2026-04-09","tpTotal":1,"items":[{"beer":"DC","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-04-09T09:00:00.000Z","source":"historical"},{"id":"900100","barId":52,"deliveryDate":"2026-04-17","tpTotal":2,"items":[{"beer":"DC","size":20,"qty":1},{"beer":"GR","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-04-17T09:00:00.000Z","source":"historical"},{"id":"900101","barId":52,"deliveryDate":"2026-04-30","tpTotal":2,"items":[{"beer":"GR","size":20,"qty":1},{"beer":"DC","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-04-30T09:00:00.000Z","source":"historical"},{"id":"900102","barId":52,"deliveryDate":"2026-05-08","tpTotal":1,"items":[{"beer":"DC","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-05-08T09:00:00.000Z","source":"historical"},{"id":"900103","barId":52,"deliveryDate":"2026-05-14","tpTotal":1,"items":[{"beer":"GR","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-05-14T09:00:00.000Z","source":"historical"},{"id":"900104","barId":39,"deliveryDate":"2026-04-09","tpTotal":1,"items":[{"beer":"GR","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-04-09T09:00:00.000Z","source":"historical"},{"id":"900105","barId":39,"deliveryDate":"2026-04-17","tpTotal":1,"items":[{"beer":"DC","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-04-17T09:00:00.000Z","source":"historical"},{"id":"900106","barId":39,"deliveryDate":"2026-05-08","tpTotal":1,"items":[{"beer":"BB","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-05-08T09:00:00.000Z","source":"historical"},{"id":"900107","barId":55,"deliveryDate":"2026-04-02","tpTotal":1,"items":[{"beer":"BB","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-04-02T09:00:00.000Z","source":"historical"},{"id":"900108","barId":55,"deliveryDate":"2026-04-17","tpTotal":1,"items":[{"beer":"BB","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-04-17T09:00:00.000Z","source":"historical"},{"id":"900109","barId":55,"deliveryDate":"2026-04-23","tpTotal":1,"items":[{"beer":"BB","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-04-23T09:00:00.000Z","source":"historical"},{"id":"900110","barId":55,"deliveryDate":"2026-05-08","tpTotal":1,"items":[{"beer":"BB","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-05-08T09:00:00.000Z","source":"historical"},{"id":"900111","barId":55,"deliveryDate":"2026-05-14","tpTotal":1,"items":[{"beer":"BB","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-05-14T09:00:00.000Z","source":"historical"},{"id":"900112","barId":55,"deliveryDate":"2026-05-21","tpTotal":1,"items":[{"beer":"BB","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-05-21T09:00:00.000Z","source":"historical"},{"id":"900113","barId":54,"deliveryDate":"2026-04-02","tpTotal":3,"items":[{"beer":"MP","size":20,"qty":1},{"beer":"BB","size":20,"qty":1},{"beer":"OW","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-04-02T09:00:00.000Z","source":"historical"},{"id":"900114","barId":54,"deliveryDate":"2026-04-23","tpTotal":2,"items":[{"beer":"MP","size":20,"qty":1},{"beer":"BB","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-04-23T09:00:00.000Z","source":"historical"},{"id":"900115","barId":54,"deliveryDate":"2026-05-14","tpTotal":2,"items":[{"beer":"MP","size":20,"qty":1},{"beer":"BB","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-05-14T09:00:00.000Z","source":"historical"},{"id":"900116","barId":54,"deliveryDate":"2026-05-21","tpTotal":1,"items":[{"beer":"BB","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-05-21T09:00:00.000Z","source":"historical"},{"id":"900117","barId":10,"deliveryDate":"2026-04-09","tpTotal":1,"items":[{"beer":"MP","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-04-09T09:00:00.000Z","source":"historical"},{"id":"900118","barId":10,"deliveryDate":"2026-05-14","tpTotal":1,"items":[{"beer":"BB","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-05-14T09:00:00.000Z","source":"historical"},{"id":"900119","barId":10,"deliveryDate":"2026-05-21","tpTotal":2,"items":[{"beer":"MP","size":20,"qty":1},{"beer":"DC","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-05-21T09:00:00.000Z","source":"historical"},{"id":"900120","barId":12,"deliveryDate":"2026-04-17","tpTotal":3,"items":[{"beer":"MP","size":20,"qty":1},{"beer":"BB","size":20,"qty":1},{"beer":"DC","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-04-17T09:00:00.000Z","source":"historical"},{"id":"900121","barId":12,"deliveryDate":"2026-05-08","tpTotal":3,"items":[{"beer":"DC","size":20,"qty":1},{"beer":"BB","size":20,"qty":1},{"beer":"MP","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-05-08T09:00:00.000Z","source":"historical"},{"id":"900122","barId":65,"deliveryDate":"2026-04-23","tpTotal":1,"items":[{"beer":"OW","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-04-23T09:00:00.000Z","source":"historical"},{"id":"900123","barId":76,"deliveryDate":"2026-04-30","tpTotal":2,"items":[{"beer":"MP","size":20,"qty":1},{"beer":"GR","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-04-30T09:00:00.000Z","source":"historical"},{"id":"900124","barId":76,"deliveryDate":"2026-05-21","tpTotal":3,"items":[{"beer":"GR","size":20,"qty":2},{"beer":"MP","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-05-21T09:00:00.000Z","source":"historical"},{"id":"900125","barId":35,"deliveryDate":"2026-04-02","tpTotal":2,"items":[{"beer":"GR","size":20,"qty":1},{"beer":"BB","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-04-02T09:00:00.000Z","source":"historical"},{"id":"900126","barId":35,"deliveryDate":"2026-04-17","tpTotal":2,"items":[{"beer":"DC","size":20,"qty":1},{"beer":"MP","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-04-17T09:00:00.000Z","source":"historical"},{"id":"900127","barId":35,"deliveryDate":"2026-05-08","tpTotal":3,"items":[{"beer":"MP","size":20,"qty":1},{"beer":"BB","size":20,"qty":1},{"beer":"DC","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-05-08T09:00:00.000Z","source":"historical"},{"id":"900128","barId":35,"deliveryDate":"2026-05-21","tpTotal":1,"items":[{"beer":"GR","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-05-21T09:00:00.000Z","source":"historical"},{"id":"900129","barId":31,"deliveryDate":"2026-04-02","tpTotal":2,"items":[{"beer":"GR","size":20,"qty":2}],"notes":"","status":"delivered","createdAt":"2026-04-02T09:00:00.000Z","source":"historical"},{"id":"900130","barId":31,"deliveryDate":"2026-04-17","tpTotal":1,"items":[{"beer":"GR","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-04-17T09:00:00.000Z","source":"historical"},{"id":"900131","barId":31,"deliveryDate":"2026-04-23","tpTotal":3,"items":[{"beer":"BB","size":20,"qty":1},{"beer":"GR","size":20,"qty":2}],"notes":"","status":"delivered","createdAt":"2026-04-23T09:00:00.000Z","source":"historical"},{"id":"900132","barId":31,"deliveryDate":"2026-04-30","tpTotal":1,"items":[{"beer":"BB","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-04-30T09:00:00.000Z","source":"historical"},{"id":"900133","barId":31,"deliveryDate":"2026-05-08","tpTotal":2,"items":[{"beer":"GR","size":20,"qty":1},{"beer":"BB","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-05-08T09:00:00.000Z","source":"historical"},{"id":"900134","barId":31,"deliveryDate":"2026-05-14","tpTotal":2,"items":[{"beer":"GR","size":20,"qty":1},{"beer":"BB","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-05-14T09:00:00.000Z","source":"historical"},{"id":"900135","barId":31,"deliveryDate":"2026-05-21","tpTotal":3,"items":[{"beer":"GR","size":20,"qty":2},{"beer":"BB","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-05-21T09:00:00.000Z","source":"historical"},{"id":"900136","barId":59,"deliveryDate":"2026-05-02","tpTotal":2,"items":[{"beer":"GR","size":20,"qty":2}],"notes":"","status":"delivered","createdAt":"2026-05-02T09:00:00.000Z","source":"historical"},{"id":"900137","barId":13,"deliveryDate":"2026-04-02","tpTotal":2,"items":[{"beer":"GR","size":20,"qty":2}],"notes":"","status":"delivered","createdAt":"2026-04-02T09:00:00.000Z","source":"historical"},{"id":"900138","barId":13,"deliveryDate":"2026-04-09","tpTotal":1,"items":[{"beer":"GR","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-04-09T09:00:00.000Z","source":"historical"},{"id":"900139","barId":13,"deliveryDate":"2026-04-17","tpTotal":2,"items":[{"beer":"GR","size":20,"qty":2}],"notes":"","status":"delivered","createdAt":"2026-04-17T09:00:00.000Z","source":"historical"},{"id":"900140","barId":13,"deliveryDate":"2026-04-23","tpTotal":1,"items":[{"beer":"GR","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-04-23T09:00:00.000Z","source":"historical"},{"id":"900141","barId":13,"deliveryDate":"2026-04-30","tpTotal":2,"items":[{"beer":"GR","size":20,"qty":2}],"notes":"","status":"delivered","createdAt":"2026-04-30T09:00:00.000Z","source":"historical"},{"id":"900142","barId":13,"deliveryDate":"2026-05-08","tpTotal":2,"items":[{"beer":"GR","size":20,"qty":2}],"notes":"","status":"delivered","createdAt":"2026-05-08T09:00:00.000Z","source":"historical"},{"id":"900143","barId":13,"deliveryDate":"2026-05-14","tpTotal":2,"items":[{"beer":"GR","size":20,"qty":2}],"notes":"","status":"delivered","createdAt":"2026-05-14T09:00:00.000Z","source":"historical"},{"id":"900144","barId":37,"deliveryDate":"2026-04-02","tpTotal":2,"items":[{"beer":"MP","size":20,"qty":1},{"beer":"DC","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-04-02T09:00:00.000Z","source":"historical"},{"id":"900145","barId":37,"deliveryDate":"2026-04-17","tpTotal":2,"items":[{"beer":"MP","size":20,"qty":1},{"beer":"DC","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-04-17T09:00:00.000Z","source":"historical"},{"id":"900146","barId":37,"deliveryDate":"2026-05-06","tpTotal":2,"items":[{"beer":"MP","size":20,"qty":1},{"beer":"DC","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-05-06T09:00:00.000Z","source":"historical"},{"id":"900147","barId":37,"deliveryDate":"2026-05-21","tpTotal":2,"items":[{"beer":"MP","size":20,"qty":1},{"beer":"DC","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-05-21T09:00:00.000Z","source":"historical"},{"id":"900148","barId":2,"deliveryDate":"2026-04-02","tpTotal":3,"items":[{"beer":"BB","size":20,"qty":1},{"beer":"GR","size":20,"qty":1},{"beer":"OW","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-04-02T09:00:00.000Z","source":"historical"},{"id":"900149","barId":2,"deliveryDate":"2026-04-09","tpTotal":3,"items":[{"beer":"GR","size":20,"qty":1},{"beer":"BB","size":20,"qty":1},{"beer":"OW","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-04-09T09:00:00.000Z","source":"historical"},{"id":"900150","barId":2,"deliveryDate":"2026-05-08","tpTotal":3,"items":[{"beer":"OW","size":20,"qty":1},{"beer":"BB","size":20,"qty":1},{"beer":"GR","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-05-08T09:00:00.000Z","source":"historical"},{"id":"900151","barId":2,"deliveryDate":"2026-05-21","tpTotal":2,"items":[{"beer":"BB","size":20,"qty":1},{"beer":"OW","size":20,"qty":1}],"notes":"","status":"delivered","createdAt":"2026-05-21T09:00:00.000Z","source":"historical"},{"id":"900152","barId":1,"deliveryDate":"2026-04-09","tpTotal":2,"items":[{"beer":"OW","size":20,"qty":2}],"notes":"","status":"delivered","createdAt":"2026-04-09T09:00:00.000Z","source":"historical"}];
+</script>
+</body>
+</html>
