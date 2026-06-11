@@ -259,7 +259,14 @@ async function sbGet(table) {
     const res = await fetch(SB_URL + '/rest/v1/' + table + '?select=id,data', { headers: SB_HDR });
     if (!res.ok) return [];
     const rows = await res.json();
-    return rows.map(r => Object.assign({}, r.data, { id: r.id })).filter(Boolean);
+    return rows.map(r => {
+      if (!r.data) return null;
+      // data.id is the real business id (bar number, order number etc)
+      // r.id is the Supabase row key — keep data.id as authoritative
+      const obj = Object.assign({}, r.data);
+      if (obj.id == null) obj._rowId = r.id; // only use row id if data has no id
+      return obj;
+    }).filter(Boolean);
   } catch (_) { return []; }
 }
 
@@ -365,7 +372,8 @@ function getRevenue(o) {
 }
 
 function findBar(barId) {
-  return bars.find(x => String(x.id) === String(barId));
+  // coerce both sides — data.id may be number, barId from orders may be number or string
+  return bars.find(x => Number(x.id) === Number(barId));
 }
 
 function allOrders() {
@@ -492,7 +500,7 @@ function renderB2B() {
       '</tr>';
   }).join('');
 
-  const topBars = Object.entries(barMap).sort((a,b) => (b[1].mrp+b[1].svc)-(a[1].mrp+a[1].svc)).slice(0, 12);
+  const topBars = Object.entries(barMap).sort((a,b) => (b[1].mrp+b[1].svc)-(a[1].mrp+a[1].svc));
   const barRows = topBars.map(function(entry) {
     const name = entry[0];
     const d = entry[1];
@@ -535,7 +543,7 @@ function renderB2B() {
     '</div>' +
 
     '<div class="card">' +
-      '<div class="card-title">Top Bars — ' + monthLabel(off) + '</div>' +
+      '<div class="card-title">All Bars — ' + monthLabel(off) + '</div>' +
       '<div class="tbl-wrap"><table>' +
         '<thead><tr><th>Bar</th><th>Kegs</th><th>MRP</th><th>Service</th><th>Total</th></tr></thead>' +
         '<tbody>' + (barRows || '<tr><td colspan="5" class="empty">No orders this month</td></tr>') + '</tbody>' +
