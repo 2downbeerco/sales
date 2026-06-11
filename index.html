@@ -227,6 +227,7 @@ const BEERS = [
 let orders = [];
 let bars = [];
 let invData = {};
+let rateCard = {};
 let growlerSales = [];
 let currentTab = 'b2b';
 let b2bOff = 0, growOff = 0, consOff = 0;
@@ -287,6 +288,7 @@ async function loadData() {
     try { const o = localStorage.getItem('2down_orders_v4'); if (o) orders = JSON.parse(o); } catch(_) {}
     try { const b = localStorage.getItem('2down_bars_v4');   if (b) bars = JSON.parse(b); }   catch(_) {}
     try { const i = localStorage.getItem('2down_inv_data');  if (i) invData = JSON.parse(i); } catch(_) {}
+    try { const r = localStorage.getItem('2down_ratecard');    if (r) rateCard = JSON.parse(r); } catch(_) {}
     try { const g = localStorage.getItem('2down_growler_sales'); if (g) growlerSales = JSON.parse(g); } catch(_) {}
 
     const [remOrders, remBars, remKegs] = await Promise.all([
@@ -303,6 +305,8 @@ async function loadData() {
     }
     const invRow = remKegs.find(k => k && k.invData);
     if (invRow) { invData = invRow.invData; localStorage.setItem('2down_inv_data', JSON.stringify(invData)); }
+    const rcRow = remKegs.find(k => k && k.rateCard);
+    if (rcRow) { rateCard = rcRow.rateCard; localStorage.setItem('2down_ratecard', JSON.stringify(rateCard)); }
     const growRow = remKegs.find(k => k && k.growlerSales);
     if (growRow) { growlerSales = growRow.growlerSales; localStorage.setItem('2down_growler_sales', JSON.stringify(growlerSales)); }
 
@@ -357,18 +361,18 @@ function getRevenue(o) {
       svc: (hist.svcAmount || 0) - (Number(live.svcDiscount) || 0)
     };
   }
-  // Live order: use invData amounts if present, else estimate MRP only
-  if (live.mrpAmount != null) {
-    return {
-      mrp: (Number(live.mrpAmount) || 0) - (Number(live.mrpDiscount) || 0),
-      svc: (Number(live.svcAmount) || 0) - (Number(live.svcDiscount) || 0)
-    };
-  }
+  // Live order: compute using rate card (same formula as ops app)
+  const rc = rateCard[String(o.barId)] || {};
   const litres = (o.items || []).reduce((s, i) => s + i.qty * i.size, 0);
-  return {
-    mrp: Math.ceil(MRP_PER_LITRE * 1.02 * litres) - (Number(live.mrpDiscount) || 0),
-    svc: -(Number(live.svcDiscount) || 0)
-  };
+  const mrpGross = Math.ceil(MRP_PER_LITRE * 1.02 * litres);
+  const mrpFinal = mrpGross - (Number(live.mrpDiscount) || 0);
+  let svcGross = 0;
+  (o.items || []).forEach(item => {
+    const r = rc[item.beer] || {};
+    if (r.rate) svcGross += (Number(r.rate) - MRP_PER_LITRE) * item.qty * item.size;
+  });
+  const svcFinal = parseFloat((svcGross - (Number(live.svcDiscount) || 0)).toFixed(2));
+  return { mrp: mrpFinal, svc: svcFinal };
 }
 
 function findBar(barId) {
