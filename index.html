@@ -40,8 +40,8 @@ body { font-family: var(--sans); background: var(--bg); color: var(--text); font
   width: 340px; text-align: center;
   box-shadow: 0 2px 12px rgba(0,0,0,0.07), 0 0 0 1px var(--border);
 }
-.login-logo { font-size: 20px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 4px; }
-.login-logo span { color: var(--orange); }
+.login-logo { margin-bottom: 4px; }
+.login-logo img { height: 100px; width: auto; }
 .login-sub { font-size: 12px; color: var(--muted); margin-bottom: 28px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; }
 
 /* ── App shell ── */
@@ -54,8 +54,8 @@ body { font-family: var(--sans); background: var(--bg); color: var(--text); font
   display: flex; align-items: center;
   height: 50px; gap: 0; position: sticky; top: 0; z-index: 100;
 }
-.topbar-brand { font-weight: 800; font-size: 14px; letter-spacing: -0.3px; margin-right: 28px; white-space: nowrap; }
-.topbar-brand span { color: var(--orange); }
+.topbar-brand { margin-right: 28px; display: flex; align-items: center; }
+.topbar-brand img { height: 40px; width: auto; }
 .tab-btn {
   padding: 0 14px; height: 50px; border: none; background: none; cursor: pointer;
   font-size: 13px; font-weight: 600; color: var(--muted);
@@ -179,7 +179,7 @@ tbody tr:hover td { background: var(--surface2); }
 <!-- Login -->
 <div id="login-screen">
   <div class="login-card">
-    <div class="login-logo"><span>2 Down</span> Beer Co.</div>
+    <div class="login-logo"><img src="./logo-light.png" alt="2 Down Beer Co."></div>
     <div class="login-sub">Sales Dashboard</div>
     <input type="password" id="login-pw" class="inp" style="width:100%;margin-bottom:12px;text-align:center" placeholder="Password…"
       onkeydown="if(event.key==='Enter')checkPw()">
@@ -190,7 +190,7 @@ tbody tr:hover td { background: var(--surface2); }
 <!-- App -->
 <div id="app">
   <div class="topbar">
-    <div class="topbar-brand"><span>2 Down</span> Beer Co.</div>
+    <div class="topbar-brand"><img src="./logo-light.png" alt="2 Down Beer Co."></div>
     <button class="tab-btn active" onclick="switchTab('b2b',this)">B2B Revenue</button>
     <button class="tab-btn" onclick="switchTab('growlers',this)">Growler Sales</button>
     <button class="tab-btn" onclick="switchTab('consolidated',this)">Consolidated</button>
