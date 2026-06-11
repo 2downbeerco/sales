@@ -350,6 +350,13 @@ function getRevenue(o) {
       svc: (hist.svcAmount || 0) - (Number(live.svcDiscount) || 0)
     };
   }
+  // Live order: use invData amounts if present, else estimate MRP only
+  if (live.mrpAmount != null) {
+    return {
+      mrp: (Number(live.mrpAmount) || 0) - (Number(live.mrpDiscount) || 0),
+      svc: (Number(live.svcAmount) || 0) - (Number(live.svcDiscount) || 0)
+    };
+  }
   const litres = (o.items || []).reduce((s, i) => s + i.qty * i.size, 0);
   return {
     mrp: Math.ceil(MRP_PER_LITRE * 1.02 * litres) - (Number(live.mrpDiscount) || 0),
@@ -357,9 +364,13 @@ function getRevenue(o) {
   };
 }
 
+function findBar(barId) {
+  return bars.find(x => String(x.id) === String(barId));
+}
+
 function allOrders() {
   return [...orders, ...HISTORICAL_ORDERS].filter(o => {
-    const b = bars.find(x => x.id === o.barId) || { barName: '' };
+    const b = findBar(o.barId) || { barName: '' };
     return !b.barName.toLowerCase().includes('patel provision');
   });
 }
@@ -460,7 +471,7 @@ function renderB2B() {
   // Bar map
   const barMap = {};
   monthOrders.forEach(o => {
-    const b = bars.find(x => x.id === o.barId) || { barName: 'Unknown' };
+    const b = findBar(o.barId) || { barName: 'Unknown' };
     if (!barMap[b.barName]) barMap[b.barName] = { mrp: 0, svc: 0, kegs: 0 };
     const r = getRevenue(o);
     barMap[b.barName].mrp += r.mrp;
