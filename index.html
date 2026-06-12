@@ -216,12 +216,24 @@ const SB_HDR = {
 const MRP_PER_LITRE = 134.4;
 
 const BEERS = [
-  { code: 'BB', name: 'Basil Blonde',  color: '#D4A017' },
-  { code: 'GR', name: 'Gold Rush',     color: '#7BB353' },
-  { code: 'MP', name: 'Missing Piece', color: '#E07B3A' },
-  { code: 'DC', name: 'Daddy Cool',    color: '#9B7B6A' },
-  { code: 'OW', name: 'Other Weiss',   color: '#4A9BD4' },
+  { code: 'BB',  name: 'Basil Blonde',  color: '#D4A017' },
+  { code: 'GR',  name: 'Gold Rush',     color: '#7BB353' },
+  { code: 'MP',  name: 'Missing Piece', color: '#E07B3A' },
+  { code: 'DC',  name: 'Daddy Cool',    color: '#9B7B6A' },
+  { code: 'OW',  name: 'Other Weiss',   color: '#4A9BD4' },
+  { code: '#10', name: '#10',           color: '#A0522D', inactive: true },
+  { code: 'FL',  name: 'Fruit Loop',    color: '#20B2AA', inactive: true },
+  { code: 'PP',  name: 'Pretty Please', color: '#9370DB', inactive: true },
+  { code: '7S',  name: '7 Since',       color: '#CD5C5C', inactive: true },
 ];
+
+// Strip batch number suffix, but preserve codes like '#10' that start with non-alpha
+function baseCode(code) {
+  if (!code) return code;
+  // codes like '#10' — starts with non-letter, keep as-is
+  if (!/^[A-Za-z]/.test(code)) return code;
+  return code.replace(/\d+$/, '');
+}
 
 // ── State ────────────────────────────────────────────────────────────────────
 let orders = [];
@@ -469,13 +481,14 @@ function renderB2B() {
     const r = getRevenue(o);
     const totalL = (o.items || []).reduce((s, i) => s + i.qty * i.size, 0);
     (o.items || []).forEach(i => {
-      if (!beerMap[i.beer]) beerMap[i.beer] = { kegs: 0, litres: 0, mrp: 0, svc: 0 };
-      beerMap[i.beer].kegs += i.qty;
-      beerMap[i.beer].litres += i.qty * i.size;
+      const bc = baseCode(i.beer);
+      if (!beerMap[bc]) beerMap[bc] = { kegs: 0, litres: 0, mrp: 0, svc: 0 };
+      beerMap[bc].kegs += i.qty;
+      beerMap[bc].litres += i.qty * i.size;
       if (totalL > 0) {
         const frac = (i.qty * i.size) / totalL;
-        beerMap[i.beer].mrp += r.mrp * frac;
-        beerMap[i.beer].svc += r.svc * frac;
+        beerMap[bc].mrp += r.mrp * frac;
+        beerMap[bc].svc += r.svc * frac;
       }
     });
   });
@@ -491,11 +504,14 @@ function renderB2B() {
     barMap[b.barName].kegs += (o.items || []).reduce((s, i) => s + i.qty, 0);
   });
 
-  const beerRows = BEERS.map(b => {
+  const beerRows = BEERS.filter(b => {
+    const d = beerMap[b.code];
+    return d && (d.kegs > 0);
+  }).map(b => {
     const d = beerMap[b.code] || { kegs: 0, litres: 0, mrp: 0, svc: 0 };
     const tot = d.mrp + d.svc;
     return '<tr>' +
-      '<td><span class="badge" style="background:' + b.color + '22;color:' + b.color + '">' + b.code + '</span> <span style="color:var(--muted)">' + b.name + '</span></td>' +
+      '<td><span class="badge" style="background:' + b.color + '22;color:' + b.color + '">' + b.code + '</span> <span style="color:var(--muted)">' + b.name + (b.inactive ? ' <span style="font-size:10px;color:var(--muted)">(retired)</span>' : '') + '</span></td>' +
       '<td>' + d.kegs + '</td>' +
       '<td>' + d.litres + 'L</td>' +
       '<td>' + fmtINR(d.mrp) + '</td>' +
@@ -561,8 +577,9 @@ function renderB2B() {
     ]
   );
 
-  const beerTotals = BEERS.map(b => (beerMap[b.code] ? beerMap[b.code].mrp + beerMap[b.code].svc : 0));
-  makeDoughnut('b2b-beer-donut', BEERS.map(b => b.name), beerTotals, BEERS.map(b => b.color));
+  const activeBeers = BEERS.filter(b => beerMap[b.code] && beerMap[b.code].kegs > 0);
+  const beerTotals = activeBeers.map(b => beerMap[b.code].mrp + beerMap[b.code].svc);
+  makeDoughnut('b2b-beer-donut', activeBeers.map(b => b.name), beerTotals, activeBeers.map(b => b.color));
 }
 
 // ── Growler tab ───────────────────────────────────────────────────────────────
