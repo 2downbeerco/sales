@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="2 Down Sales">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍺</text></svg>">
 <title>2 Down Beer Co. — Sales</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -191,9 +192,9 @@ tbody tr:hover td { background: var(--surface2); }
 <div id="app">
   <div class="topbar">
     <div class="topbar-brand"><img src="./logo-light.png" alt="2 Down Beer Co."></div>
-    <button class="tab-btn active" onclick="switchTab('b2b',this)">B2B Revenue</button>
+    <button class="tab-btn" onclick="switchTab('b2b',this)">B2B Revenue</button>
     <button class="tab-btn" onclick="switchTab('growlers',this)">Growler Sales</button>
-    <button class="tab-btn" onclick="switchTab('consolidated',this)">Consolidated</button>
+    <button class="tab-btn active" onclick="switchTab('consolidated',this)">Consolidated</button>
     <div class="topbar-right">
       <a href="../orders/" class="back-link">← Ops</a>
     </div>
@@ -241,8 +242,11 @@ let bars = [];
 let invData = {};
 let rateCard = {};
 let growlerSales = [];
-let currentTab = 'b2b';
+let currentTab = 'consolidated';
 let b2bOff = 0, growOff = 0, consOff = 0;
+let consView = 'overview'; // 'overview' | 'monthly' | 'fy'
+let consFY = 'FY26-27';    // 'FY26-27' | 'FY25-26'
+let beerMixMode = 'revenue';
 
 // ── Auth ─────────────────────────────────────────────────────────────────────
 function checkPw() {
@@ -432,16 +436,56 @@ function makeBarChart(id, labels, datasets, yTickFmt) {
   });
 }
 
-function makeDoughnut(id, labels, data, colors) {
+function makeStackedBarChart(id, labels, datasets) {
   destroyChart(id);
   const ctx = document.getElementById(id);
   if (!ctx) return;
+  _charts[id] = new Chart(ctx, {
+    type: 'bar',
+    data: { labels: labels, datasets: datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { font: { family: 'Plus Jakarta Sans', size: 11 }, boxWidth: 12 } },
+        tooltip: {
+          callbacks: {
+            label: function(ctx) {
+              return ' ' + ctx.dataset.label + ': ₹' + Math.round(ctx.parsed.y).toLocaleString('en-IN');
+            }
+          }
+        }
+      },
+      scales: {
+        x: { stacked: true, grid: { display: false }, ticks: { font: { family: 'Plus Jakarta Sans', size: 11 } } },
+        y: { stacked: true, grid: { color: '#E6E2DB' }, ticks: { font: { family: 'Plus Jakarta Sans', size: 11 }, callback: v => '₹' + Math.round(v/1000) + 'k' } }
+      }
+    }
+  });
+}
+
+function makeDoughnut(id, labels, data, colors, tooltipFmt) {
+  destroyChart(id);
+  const ctx = document.getElementById(id);
+  if (!ctx) return;
+  const total = data.reduce((s, v) => s + v, 0);
   _charts[id] = new Chart(ctx, {
     type: 'doughnut',
     data: { labels: labels, datasets: [{ data: data, backgroundColor: colors, borderWidth: 2, borderColor: '#fff' }] },
     options: {
       responsive: true, maintainAspectRatio: false, cutout: '65%',
-      plugins: { legend: { position: 'right', labels: { font: { family: 'Plus Jakarta Sans', size: 11 }, boxWidth: 10, padding: 10 } } }
+      plugins: {
+        legend: { position: 'right', labels: { font: { family: 'Plus Jakarta Sans', size: 11 }, boxWidth: 10, padding: 10 } },
+        tooltip: {
+          callbacks: {
+            label: function(ctx) {
+              const val = ctx.parsed;
+              const pct = total > 0 ? (val / total * 100).toFixed(1) : 0;
+              const formatted = tooltipFmt ? tooltipFmt(val) : ('\u20B9' + Math.round(val).toLocaleString('en-IN'));
+              return ' ' + formatted + '  (' + pct + '%)';
+            }
+          }
+        }
+      }
     }
   });
 }
@@ -550,7 +594,13 @@ function renderB2B() {
 
     '<div class="grid2">' +
       '<div class="card">' +
-        '<div class="card-title">Beer Mix</div>' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">' +
+          '<div class="card-title" style="margin-bottom:0">Beer Mix</div>' +
+          '<div style="display:flex;gap:4px">' +
+            '<button class="btn btn-sm ' + (beerMixMode==="revenue"?"btn-primary":"btn-ghost") + '" onclick="beerMixMode=\'revenue\';renderB2B()">Revenue</button>' +
+            '<button class="btn btn-sm ' + (beerMixMode==="volume"?"btn-primary":"btn-ghost") + '" onclick="beerMixMode=\'volume\';renderB2B()">Volume</button>' +
+          '</div>' +
+        '</div>' +
         '<div class="chart-wrap" style="height:200px"><canvas id="b2b-beer-donut"></canvas></div>' +
       '</div>' +
       '<div class="card">' +
@@ -578,8 +628,11 @@ function renderB2B() {
   );
 
   const activeBeers = BEERS.filter(b => beerMap[b.code] && beerMap[b.code].kegs > 0);
-  const beerTotals = activeBeers.map(b => beerMap[b.code].mrp + beerMap[b.code].svc);
-  makeDoughnut('b2b-beer-donut', activeBeers.map(b => b.name), beerTotals, activeBeers.map(b => b.color));
+  const donutData = beerMixMode === 'volume'
+    ? activeBeers.map(b => beerMap[b.code].litres)
+    : activeBeers.map(b => beerMap[b.code].mrp + beerMap[b.code].svc);
+  const donutFmt = beerMixMode === 'volume' ? (v => Math.round(v) + 'L') : null;
+  makeDoughnut('b2b-beer-donut', activeBeers.map(b => b.name), donutData, activeBeers.map(b => b.color), donutFmt);
 }
 
 // ── Growler tab ───────────────────────────────────────────────────────────────
@@ -699,6 +752,91 @@ async function deleteGrowler(id) {
 
 // ── Consolidated tab ──────────────────────────────────────────────────────────
 function renderConsolidated() {
+  if (consView === 'monthly') { renderConsMontly(); return; }
+  if (consView === 'fy')      { renderConsFY(); return; }
+  renderConsOverview();
+}
+
+function consViewNav() {
+  return '<div class="period-nav" style="margin-bottom:16px">' +
+    '<button class="btn btn-sm ' + (consView==='overview'?'btn-primary':'btn-ghost') + '" onclick="consView=\'overview\';renderConsolidated()">Overview</button>' +
+    '<button class="btn btn-sm ' + (consView==='monthly'?'btn-primary':'btn-ghost') + '" onclick="consView=\'monthly\';renderConsolidated()">Month-wise</button>' +
+    '<button class="btn btn-sm ' + (consView==='fy'?'btn-primary':'btn-ghost') + '" onclick="consView=\'fy\';renderConsolidated()">FY-wise</button>' +
+  '</div>';
+}
+
+function renderConsOverview() {
+  const fy = currentFY();
+  const fyOrders = ordersInFY(fy);
+  const fyGrow = growlersInFY(fy);
+
+  let totalRev = 0, totalLitres = 0;
+  fyOrders.forEach(o => { const r = getRevenue(o); totalRev += r.mrp + r.svc; totalLitres += (o.items||[]).reduce((s,i) => s+i.qty*i.size,0); });
+  fyGrow.forEach(s => { totalRev += (Number(s.mrpAmount)||0) + (Number(s.svcAmount)||0); totalLitres += Number(s.volume)||0; });
+
+  // Beer mix
+  const beerMap = {};
+  BEERS.forEach(b => { beerMap[b.code] = { litres: 0, rev: 0 }; });
+  fyOrders.forEach(o => {
+    const r = getRevenue(o);
+    const totalL = (o.items||[]).reduce((s,i) => s+i.qty*i.size, 0);
+    (o.items||[]).forEach(i => {
+      const bc = baseCode(i.beer);
+      if (!beerMap[bc]) beerMap[bc] = { litres: 0, rev: 0 };
+      beerMap[bc].litres += i.qty * i.size;
+      if (totalL > 0) beerMap[bc].rev += (r.mrp + r.svc) * (i.qty * i.size) / totalL;
+    });
+  });
+
+  // Top 10 bars
+  const barMap = {};
+  fyOrders.forEach(o => {
+    const b = findBar(o.barId) || { barName: 'Unknown' };
+    if (!barMap[b.barName]) barMap[b.barName] = { rev: 0, litres: 0 };
+    const r = getRevenue(o);
+    barMap[b.barName].rev += r.mrp + r.svc;
+    barMap[b.barName].litres += (o.items||[]).reduce((s,i) => s+i.qty*i.size, 0);
+  });
+  const top10 = Object.entries(barMap).sort((a,b) => b[1].rev - a[1].rev).slice(0, 10);
+  const barRows = top10.map(function(entry) {
+    return '<tr><td style="font-weight:600">' + entry[0] + '</td>' +
+      '<td>' + entry[1].litres + 'L</td>' +
+      '<td style="font-weight:700;color:var(--orange)">' + fmtINR(entry[1].rev) + '</td></tr>';
+  }).join('');
+
+  const activeBeers = BEERS.filter(b => beerMap[b.code] && beerMap[b.code].litres > 0);
+
+  document.getElementById('content').innerHTML =
+    consViewNav() +
+    '<div style="font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:12px">' + fy + ' — Year to Date</div>' +
+
+    '<div class="stat-row" style="grid-template-columns:1fr 1fr">' +
+      '<div class="stat-card"><div class="stat-num" style="color:var(--orange)">' + fmtINR(totalRev) + '</div><div class="stat-lbl">Total Revenue</div></div>' +
+      '<div class="stat-card"><div class="stat-num" style="color:var(--blue)">' + Math.round(totalLitres) + 'L</div><div class="stat-lbl">Total Litres Sold</div></div>' +
+    '</div>' +
+
+    '<div class="grid2">' +
+      '<div class="card">' +
+        '<div class="card-title">Beer Mix — Revenue</div>' +
+        '<div class="chart-wrap" style="height:220px"><canvas id="cons-beer-donut"></canvas></div>' +
+      '</div>' +
+      '<div class="card">' +
+        '<div class="card-title">Top 10 Bars — ' + fy + '</div>' +
+        '<div class="tbl-wrap"><table>' +
+          '<thead><tr><th>Bar</th><th>Litres</th><th>Revenue</th></tr></thead>' +
+          '<tbody>' + (barRows || '<tr><td colspan="3" class="empty">No data</td></tr>') + '</tbody>' +
+        '</table></div>' +
+      '</div>' +
+    '</div>';
+
+  makeDoughnut('cons-beer-donut',
+    activeBeers.map(b => b.name),
+    activeBeers.map(b => beerMap[b.code].rev),
+    activeBeers.map(b => b.color)
+  );
+}
+
+function renderConsMontly() {
   const off = consOff;
   const { start, end } = monthRange(off);
   const monthOrders = ordersInRange(off);
@@ -708,65 +846,75 @@ function renderConsolidated() {
   monthOrders.forEach(o => { const r = getRevenue(o); b2bMRP += r.mrp; b2bSVC += r.svc; });
   let grMRP = 0, grSVC = 0;
   monthGrow.forEach(s => { grMRP += Number(s.mrpAmount)||0; grSVC += Number(s.svcAmount)||0; });
-
-  const totalMRP = b2bMRP + grMRP;
-  const totalSVC = b2bSVC + grSVC;
-  const total = totalMRP + totalSVC;
-
-  const trend = [-5,-4,-3,-2,-1,0].map(m => {
-    let bM = 0, bS = 0;
-    ordersInRange(m).forEach(o => { const r = getRevenue(o); bM += r.mrp; bS += r.svc; });
-    const { start: gs, end: ge } = monthRange(m);
-    let gM = 0, gS = 0;
-    growlerSales.filter(s => { const d = new Date(s.date); return d >= gs && d < ge; })
-      .forEach(s => { gM += Number(s.mrpAmount)||0; gS += Number(s.svcAmount)||0; });
-    const dt = new Date(); dt.setDate(1); dt.setMonth(dt.getMonth() + m);
-    return { label: dt.toLocaleString('en-IN', { month: 'short' }), b2b: bM+bS, grow: gM+gS };
-  });
+  const total = b2bMRP + b2bSVC + grMRP + grSVC;
 
   document.getElementById('content').innerHTML =
+    consViewNav() +
     periodNav(off, 'consOff++;renderConsolidated()', 'consOff--;renderConsolidated()', 'consOff=0;renderConsolidated()') +
 
     '<div class="stat-row">' +
       '<div class="stat-card"><div class="stat-num" style="color:var(--orange)">' + fmtINR(total) + '</div><div class="stat-lbl">Total Revenue</div></div>' +
       '<div class="stat-card"><div class="stat-num" style="color:var(--blue)">' + fmtINR(b2bMRP+b2bSVC) + '</div><div class="stat-lbl">B2B Revenue</div></div>' +
       '<div class="stat-card"><div class="stat-num" style="color:var(--purple)">' + fmtINR(grMRP+grSVC) + '</div><div class="stat-lbl">Growler Revenue</div></div>' +
-      '<div class="stat-card"><div class="stat-num" style="color:var(--green)">' + fmtINR(totalMRP) + '</div><div class="stat-lbl">Total MRP</div></div>' +
+      '<div class="stat-card"><div class="stat-num" style="color:var(--green)">' + monthOrders.length + '</div><div class="stat-lbl">B2B Orders</div></div>' +
     '</div>' +
 
-    '<div class="grid2">' +
-      '<div class="card">' +
-        '<div class="card-title">6-Month Revenue by Channel</div>' +
-        '<div class="chart-wrap"><canvas id="cons-trend"></canvas></div>' +
-      '</div>' +
-      '<div class="card">' +
-        '<div class="card-title">Revenue Split — ' + monthLabel(off) + '</div>' +
-        '<div style="display:grid;gap:10px;margin-top:4px">' +
-          '<div class="rev-tile">' +
-            '<div class="rev-tile-title">B2B (' + monthOrders.length + ' orders)</div>' +
-            '<div class="rev-tile-row"><span>MRP</span><b>' + fmtINR(b2bMRP) + '</b><span>Service</span><b>' + fmtINR(b2bSVC) + '</b></div>' +
-            '<div class="rev-tile-total">' + fmtINR(b2bMRP+b2bSVC) + '</div>' +
-          '</div>' +
-          '<div class="rev-tile">' +
-            '<div class="rev-tile-title">Growlers (' + monthGrow.length + ' entries)</div>' +
-            '<div class="rev-tile-row"><span>MRP</span><b>' + fmtINR(grMRP) + '</b><span>Service</span><b>' + fmtINR(grSVC) + '</b></div>' +
-            '<div class="rev-tile-total">' + fmtINR(grMRP+grSVC) + '</div>' +
-          '</div>' +
-          '<div style="padding:14px 16px;background:var(--orange-light);border:1px solid var(--orange);border-radius:var(--radius-sm);display:flex;justify-content:space-between;align-items:center">' +
-            '<span style="font-weight:700;font-size:13px">Grand Total</span>' +
-            '<span style="font-size:22px;font-weight:800;color:var(--orange)">' + fmtINR(total) + '</span>' +
-          '</div>' +
+    '<div class="card">' +
+      '<div style="display:grid;gap:10px">' +
+        '<div class="rev-tile">' +
+          '<div class="rev-tile-title">B2B (' + monthOrders.length + ' orders)</div>' +
+          '<div class="rev-tile-row"><span>MRP</span><b>' + fmtINR(b2bMRP) + '</b><span>Service</span><b>' + fmtINR(b2bSVC) + '</b></div>' +
+          '<div class="rev-tile-total">' + fmtINR(b2bMRP+b2bSVC) + '</div>' +
+        '</div>' +
+        '<div class="rev-tile">' +
+          '<div class="rev-tile-title">Growlers (' + monthGrow.length + ' entries)</div>' +
+          '<div class="rev-tile-row"><span>MRP</span><b>' + fmtINR(grMRP) + '</b><span>Service</span><b>' + fmtINR(grSVC) + '</b></div>' +
+          '<div class="rev-tile-total">' + fmtINR(grMRP+grSVC) + '</div>' +
+        '</div>' +
+        '<div style="padding:14px 16px;background:var(--orange-light);border:1px solid var(--orange);border-radius:var(--radius-sm);display:flex;justify-content:space-between;align-items:center">' +
+          '<span style="font-weight:700;font-size:13px">Grand Total</span>' +
+          '<span style="font-size:22px;font-weight:800;color:var(--orange)">' + fmtINR(total) + '</span>' +
         '</div>' +
       '</div>' +
     '</div>';
+}
 
-  makeBarChart('cons-trend',
-    trend.map(t => t.label),
-    [
-      { label: 'B2B',     data: trend.map(t => t.b2b),  backgroundColor: '#C8721A88', borderColor: '#C8721A', borderWidth: 2, borderRadius: 4 },
-      { label: 'Growlers',data: trend.map(t => t.grow), backgroundColor: '#7C3AED88', borderColor: '#7C3AED', borderWidth: 2, borderRadius: 4 }
-    ]
-  );
+function renderConsFY() {
+  const fy = consFY;
+  const months = fyMonths(fy);
+
+  const data = months.map(m => {
+    const ms = m.date;
+    const me = new Date(ms.getFullYear(), ms.getMonth() + 1, 1);
+    let b2b = 0, grow = 0;
+    allOrders().filter(o => { const d = new Date(o.deliveryDate); return d >= ms && d < me; })
+      .forEach(o => { const r = getRevenue(o); b2b += r.mrp + r.svc; });
+    growlerSales.filter(s => { const d = new Date(s.date); return d >= ms && d < me; })
+      .forEach(s => { grow += (Number(s.mrpAmount)||0) + (Number(s.svcAmount)||0); });
+    return { label: m.label, b2b, grow };
+  });
+
+  let fyRev = 0, fyOrders = ordersInFY(fy);
+  fyOrders.forEach(o => { const r = getRevenue(o); fyRev += r.mrp + r.svc; });
+  growlersInFY(fy).forEach(s => { fyRev += (Number(s.mrpAmount)||0) + (Number(s.svcAmount)||0); });
+
+  document.getElementById('content').innerHTML =
+    consViewNav() +
+    '<div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">' +
+      '<button class="btn btn-sm ' + (fy==='FY26-27'?'btn-primary':'btn-ghost') + '" onclick="consFY=\'FY26-27\';renderConsolidated()">FY 26-27</button>' +
+      '<button class="btn btn-sm ' + (fy==='FY25-26'?'btn-primary':'btn-ghost') + '" onclick="consFY=\'FY25-26\';renderConsolidated()">FY 25-26</button>' +
+      '<span style="margin-left:auto;font-weight:700;font-size:13px;color:var(--orange)">' + fmtINR(fyRev) + ' total</span>' +
+    '</div>' +
+
+    '<div class="card">' +
+      '<div class="card-title">Monthly Revenue — ' + fy + '</div>' +
+      '<div class="chart-wrap" style="height:280px"><canvas id="cons-fy-chart"></canvas></div>' +
+    '</div>';
+
+  makeStackedBarChart('cons-fy-chart', data.map(d => d.label), [
+    { label: 'B2B',      data: data.map(d => d.b2b),  backgroundColor: '#C8721A', borderColor: '#C8721A', borderWidth: 0, borderRadius: 0 },
+    { label: 'Growlers', data: data.map(d => d.grow), backgroundColor: '#7C3AED', borderColor: '#7C3AED', borderWidth: 0, borderRadius: 0 }
+  ]);
 }
 
 function closeModal() { document.getElementById('modal-root').innerHTML = ''; }
